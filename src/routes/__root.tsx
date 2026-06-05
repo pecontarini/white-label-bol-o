@@ -78,14 +78,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Palpite na Mesa" },
+      { name: "description", content: "White-label app for World Cup 2026 pools, allowing companies to brand the experience." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Palpite na Mesa" },
+      { property: "og:description", content: "White-label app for World Cup 2026 pools, allowing companies to brand the experience." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Palpite na Mesa" },
+      { name: "twitter:description", content: "White-label app for World Cup 2026 pools, allowing companies to brand the experience." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/928e4895-87cc-4fff-ba56-f2975e2614d1/id-preview-8a2a948c--f2ed33f1-7f84-451b-8950-33b68a74ec18.lovable.app-1780671972834.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/928e4895-87cc-4fff-ba56-f2975e2614d1/id-preview-8a2a948c--f2ed33f1-7f84-451b-8950-33b68a74ec18.lovable.app-1780671972834.png" },
     ],
     links: [
       {
@@ -120,10 +124,8 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <TenantProvider>
-        <div className="app-bg">
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
-        </div>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
       </TenantProvider>
     </QueryClientProvider>
   );
