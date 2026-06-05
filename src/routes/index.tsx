@@ -11,7 +11,10 @@ function Home() {
     <main
       style={{
         minHeight: "100vh",
-        background: "var(--color-brand-bg)",
+        position: "relative",
+        overflow: "hidden",
+        background:
+          "radial-gradient(1200px 600px at 20% 10%, color-mix(in oklab, var(--color-brand-primary) 25%, transparent), transparent 60%), radial-gradient(900px 500px at 90% 90%, color-mix(in oklab, var(--color-brand-accent) 20%, transparent), transparent 60%), var(--color-brand-bg)",
         color: "var(--color-brand-text)",
         fontFamily: "var(--brand-font)",
         display: "flex",
@@ -20,7 +23,41 @@ function Home() {
         padding: "2rem",
       }}
     >
-      <div style={{ maxWidth: 640, width: "100%", textAlign: "center" }}>
+      <div
+        className="blob"
+        aria-hidden
+        style={{
+          width: 480,
+          height: 480,
+          top: -120,
+          left: -120,
+          background: "var(--color-brand-primary)",
+        }}
+      />
+      <div
+        className="blob"
+        aria-hidden
+        style={{
+          width: 520,
+          height: 520,
+          bottom: -160,
+          right: -140,
+          background: "var(--color-brand-accent)",
+          animationDelay: "-4s",
+        }}
+      />
+
+      <section
+        className="glass"
+        style={{
+          position: "relative",
+          zIndex: 1,
+          maxWidth: 640,
+          width: "100%",
+          textAlign: "center",
+          padding: "3rem 2rem",
+        }}
+      >
         {tenant?.branding?.logo_url ? (
           <img
             src={tenant.branding.logo_url}
@@ -38,18 +75,7 @@ function Home() {
             Copa do Mundo FIFA 2026
           </h2>
           <p style={{ opacity: 0.85, marginBottom: "1.5rem" }}>{subtitulo}</p>
-          <button
-            style={{
-              background: "var(--color-brand-primary)",
-              color: "#fff",
-              border: "none",
-              padding: "0.75rem 1.5rem",
-              borderRadius: "0.5rem",
-              fontWeight: 600,
-              cursor: "pointer",
-              fontFamily: "inherit",
-            }}
-          >
+          <button className="cta" style={{ fontFamily: "inherit" }}>
             Entrar no bolão
           </button>
         </div>
@@ -59,7 +85,7 @@ function Home() {
             ? "Tema neutro (nenhuma empresa identificada)"
             : "Tenant: " + (tenant?.slug ?? "")}
         </div>
-      </div>
+      </section>
     </main>
   );
 }
