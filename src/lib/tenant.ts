@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface Branding {
   nome_exibicao?: string;
-  cores?: { primaria?: string; secundaria?: string; fundo?: string; texto?: string };
+  cores?: { primaria?: string; secundaria?: string; fundo?: string; texto?: string; acento?: string };
   logo_url?: string;
   fonte?: string;
   textos?: Record<string, string>;
