@@ -61,8 +61,16 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+@theme {
+  --color-brand-primary: #3B82F6;
+  --color-brand-secondary: #1E293B;
+  --color-brand-bg: #0B1120;
+  --color-brand-text: #E2E8F0;
+}
+
 :root {
   --radius: 0.625rem;
+  --brand-font: Inter, system-ui, sans-serif;
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
