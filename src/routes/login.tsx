@@ -2,18 +2,20 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { pathForRole } from "@/lib/roleRoute";
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { session, loading } = useAuth();
+  const { session, role, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!loading && session) navigate({ to: "/admin" });
-  }, [loading, session, navigate]);
+    if (loading) return;
+    if (session) navigate({ to: pathForRole(role, true) });
+  }, [loading, session, role, navigate]);
 
   async function signIn() {
     setBusy(true);
