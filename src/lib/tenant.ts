@@ -16,16 +16,24 @@ export interface Tenant {
   ativo: boolean;
 }
 
-const PLATFORM_HOSTS = new Set(["localhost", "127.0.0.1", ""]);
+const PLATFORM_ROOT = "palpitenamesa.com.br"; // domínio raiz real da plataforma
+const PREVIEW_SUFFIXES = [".lovable.app", ".lovableproject.com", ".netlify.app"];
 
 function deriveSlug(host: string): string | null {
   const override = new URLSearchParams(window.location.search).get("tenant");
   if (override) return override;
-  if (PLATFORM_HOSTS.has(host)) return null;
-  if (host.endsWith(".lovable.app") || host.endsWith(".lovableproject.com")) return null;
-  const parts = host.split(".");
-  if (parts.length >= 3 && !["www", "app"].includes(parts[0])) return parts[0];
-  return null;
+
+  if (host === "localhost" || host === "127.0.0.1") return null;
+
+  if (PREVIEW_SUFFIXES.some((s) => host.endsWith(s))) return null;
+
+  if (host !== PLATFORM_ROOT && !host.endsWith("." + PLATFORM_ROOT)) return null;
+
+  if (host === PLATFORM_ROOT || host === "www." + PLATFORM_ROOT) return null;
+
+  const label = host.slice(0, host.length - PLATFORM_ROOT.length - 1).split(".")[0];
+
+  return label === "app" ? null : (label || null);
 }
 
 export async function resolveTenant(): Promise<Tenant | null> {
