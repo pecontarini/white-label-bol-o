@@ -256,31 +256,30 @@ function AdminPage() {
                         {t.ativo ? "ativo" : "inativo"}
                       </span>
                     </td>
-                    <td className="p-3 text-right space-x-2">
-                      <button
-                        onClick={() => {
-                          setSaveMsg(null);
-                          setForm(fromTenant(t));
-                        }}
-                        className="glass-input text-xs"
-                        style={{ padding: "4px 8px", cursor: "pointer" }}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => toggleActive(t)}
-                        className="glass-input text-xs"
-                        style={{ padding: "4px 8px", cursor: "pointer" }}
-                      >
-                        {t.ativo ? "Desativar" : "Ativar"}
-                      </button>
-                      <button
-                        onClick={() => openCreateAdmin(t)}
-                        className="cta text-xs"
-                        style={{ padding: "4px 10px" }}
-                      >
-                        Criar admin
-                      </button>
+                    <td className="p-3">
+                      <div className="actions">
+                        <button
+                          onClick={() => {
+                            setSaveMsg(null);
+                            setForm(fromTenant(t));
+                          }}
+                          className="btn btn-sm btn-ghost"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => toggleActive(t)}
+                          className="btn btn-sm btn-danger"
+                        >
+                          {t.ativo ? "Desativar" : "Ativar"}
+                        </button>
+                        <button
+                          onClick={() => openCreateAdmin(t)}
+                          className="btn btn-sm btn-primary"
+                        >
+                          Criar admin
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
