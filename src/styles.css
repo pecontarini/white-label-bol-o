@@ -62,18 +62,10 @@
 }
 
 @theme {
-  --color-brand-primary: #3B82F6;
-  --color-brand-secondary: #1E293B;
-  --color-brand-bg: #0B1120;
-  --color-brand-text: #E2E8F0;
-  --color-brand-accent: #10B981;
-  --glass-bg: color-mix(in oklab, white 10%, transparent);
-  --glass-bg-strong: color-mix(in oklab, white 18%, transparent);
-  --glass-border: color-mix(in oklab, white 22%, transparent);
-  --glass-blur: 24px;
-  --glass-saturate: 140%;
-  --glass-shadow: 0 10px 40px -10px color-mix(in oklab, black 60%, transparent);
-  --glow-primary: 0 0 40px color-mix(in oklab, var(--color-brand-primary) 55%, transparent);
+  --color-brand-primary: #E9B21E;
+  --color-brand-secondary: #123A28;
+  --color-brand-bg: #0A2417;
+  --color-brand-text: #F4F7F2;
 }
 
 :root {
