@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { pathForRole } from "@/lib/roleRoute";
 
 interface TenantRow {
   id: string;
@@ -76,6 +77,11 @@ function AdminPage() {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [adminFor, setAdminFor] = useState<TenantRow | null>(null);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminBusy, setAdminBusy] = useState(false);
+  const [adminMsg, setAdminMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -95,7 +101,12 @@ function AdminPage() {
       navigate({ to: "/login" });
       return;
     }
-    if (role === "super_admin") load();
+    if (role !== "super_admin") {
+      const target = pathForRole(role, true);
+      if (target !== "/admin") navigate({ to: target });
+      return;
+    }
+    load();
   }, [loading, session, role, navigate, load]);
 
   async function signOut() {
@@ -153,6 +164,29 @@ function AdminPage() {
       .eq("id", t.id);
     if (error) setListError(error.message);
     await load();
+  }
+
+  function openCreateAdmin(t: TenantRow) {
+    setAdminFor(t);
+    setAdminEmail("");
+    setAdminPassword("");
+    setAdminMsg(null);
+  }
+
+  async function submitCreateAdmin() {
+    if (!adminFor) return;
+    setAdminBusy(true);
+    setAdminMsg(null);
+    const { data, error } = await supabase.functions.invoke("criar-admin-tenant", {
+      body: { email: adminEmail, password: adminPassword, tenant_id: adminFor.id },
+    });
+    if (error) {
+      setAdminMsg(error.message);
+    } else {
+      const created = (data as { email?: string } | null)?.email ?? adminEmail;
+      setAdminMsg("Admin criado: " + created);
+    }
+    setAdminBusy(false);
   }
 
   if (loading) {
@@ -246,6 +280,12 @@ function AdminPage() {
                         className="rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2 py-1 text-xs"
                       >
                         {t.ativo ? "Desativar" : "Ativar"}
+                      </button>
+                      <button
+                        onClick={() => openCreateAdmin(t)}
+                        className="rounded-md bg-blue-700 hover:bg-blue-600 border border-blue-600 px-2 py-1 text-xs"
+                      >
+                        Criar admin
                       </button>
                     </td>
                   </tr>
@@ -372,6 +412,56 @@ function AdminPage() {
           </button>
         </aside>
       </div>
+
+      {adminFor && (
+        <div
+          onClick={() => !adminBusy && setAdminFor(null)}
+          className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="glass w-full max-w-sm p-5 space-y-3 text-slate-100"
+          >
+            <div>
+              <h3 className="text-base font-semibold">Criar admin da empresa</h3>
+              <p className="text-xs text-slate-400">{adminFor.nome_empresa}</p>
+            </div>
+            <Field label="E-mail">
+              <input
+                type="email"
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                className={inputCls}
+              />
+            </Field>
+            <Field label="Senha temporária">
+              <input
+                type="text"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                className={inputCls}
+              />
+            </Field>
+            {adminMsg && <p className="text-sm text-amber-300">{adminMsg}</p>}
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setAdminFor(null)}
+                disabled={adminBusy}
+                className="flex-1 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 text-sm disabled:opacity-50"
+              >
+                Fechar
+              </button>
+              <button
+                onClick={submitCreateAdmin}
+                disabled={adminBusy || !adminEmail || !adminPassword}
+                className="cta flex-1 text-sm"
+              >
+                {adminBusy ? "Criando..." : "Criar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
