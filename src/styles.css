@@ -75,7 +75,7 @@
   --glass-border: color-mix(in srgb, #fff 16%, transparent);
   --glass-fill-1: color-mix(in srgb, var(--color-brand-secondary) 72%, transparent);
   --glass-fill-2: color-mix(in srgb, var(--color-brand-secondary) 38%, transparent);
-  --glass-tint: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
+  --glass-tint: color-mix(in srgb, var(--color-brand-primary) 6%, transparent);
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
@@ -177,7 +177,7 @@
   width: 380px;
   height: 380px;
   background: var(--color-brand-primary);
-  opacity: 0.20;
+  opacity: 0.10;
   top: -80px;
   left: -60px;
 }
@@ -185,37 +185,23 @@
   width: 420px;
   height: 420px;
   background: #2f6e46;
-  opacity: 0.28;
+  opacity: 0.16;
   bottom: -120px;
   right: -80px;
 }
 
 .glass {
   position: relative;
-  border-radius: 20px;
-  overflow: hidden;
+  border-radius: 16px;
   background:
-    radial-gradient(120% 120% at 0% 0%, var(--glass-tint), transparent 60%),
-    linear-gradient(135deg, var(--glass-fill-1), var(--glass-fill-2));
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    radial-gradient(140% 120% at 100% 0%, var(--glass-tint), transparent 55%),
+    color-mix(in srgb, var(--color-brand-secondary) 32%, transparent);
+  border: 1px solid color-mix(in srgb, #fff 8%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  backdrop-filter: blur(14px) saturate(120%);
   box-shadow:
-    0 8px 30px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 color-mix(in srgb, #fff 26%, transparent),
-    inset 0 -1px 0 color-mix(in srgb, #000 22%, transparent);
-}
-.glass::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(115deg, transparent 35%, color-mix(in srgb, #fff 16%, transparent) 50%, transparent 65%);
-  transform: translateX(-130%);
-  animation: glass-sweep 7s ease-in-out infinite;
-}
-@keyframes glass-sweep {
-  0%, 55% { transform: translateX(-130%); }
-  100% { transform: translateX(130%); }
+    0 10px 30px -12px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
 }
 
 .cta {
@@ -234,6 +220,51 @@
 }
 .cta:disabled { opacity: 0.6; cursor: not-allowed; }
 
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s, filter 0.15s, transform 0.05s;
+}
+.btn:active { transform: translateY(1px); }
+.btn-sm { height: 32px; padding: 0 12px; font-size: 12.5px; border-radius: 9px; }
+.btn-primary {
+  color: #241a06;
+  border: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-brand-primary) 90%, #fff), var(--color-brand-primary));
+  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--color-brand-primary) 60%, transparent);
+}
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-ghost {
+  background: color-mix(in srgb, #fff 5%, transparent);
+  color: var(--color-brand-text);
+  border: 1px solid color-mix(in srgb, #fff 12%, transparent);
+}
+.btn-ghost:hover { background: color-mix(in srgb, #fff 10%, transparent); }
+.btn-danger {
+  background: transparent;
+  color: #ff8a8a;
+  border: 1px solid color-mix(in srgb, #ff6b6b 30%, transparent);
+}
+.btn-danger:hover { background: color-mix(in srgb, #ff6b6b 12%, transparent); }
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .glass-input {
   background: color-mix(in srgb, #000 24%, transparent);
   border: 1px solid var(--glass-border);
@@ -249,5 +280,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .glass::after { animation: none; }
+  /* nothing to disable on glass now */
 }
