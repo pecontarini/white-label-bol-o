@@ -71,6 +71,11 @@
 :root {
   --radius: 0.625rem;
   --brand-font: Inter, system-ui, sans-serif;
+  --glass-blur: 16px;
+  --glass-border: color-mix(in srgb, #fff 16%, transparent);
+  --glass-fill-1: color-mix(in srgb, var(--color-brand-secondary) 72%, transparent);
+  --glass-fill-2: color-mix(in srgb, var(--color-brand-secondary) 38%, transparent);
+  --glass-tint: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
