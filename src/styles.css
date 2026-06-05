@@ -62,23 +62,20 @@
 }
 
 @theme {
-  --color-brand-primary: #3B82F6;
-  --color-brand-secondary: #1E293B;
-  --color-brand-bg: #0B1120;
-  --color-brand-text: #E2E8F0;
-  --color-brand-accent: #10B981;
-  --glass-bg: color-mix(in oklab, white 10%, transparent);
-  --glass-bg-strong: color-mix(in oklab, white 18%, transparent);
-  --glass-border: color-mix(in oklab, white 22%, transparent);
-  --glass-blur: 24px;
-  --glass-saturate: 140%;
-  --glass-shadow: 0 10px 40px -10px color-mix(in oklab, black 60%, transparent);
-  --glow-primary: 0 0 40px color-mix(in oklab, var(--color-brand-primary) 55%, transparent);
+  --color-brand-primary: #E9B21E;
+  --color-brand-secondary: #123A28;
+  --color-brand-bg: #0A2417;
+  --color-brand-text: #F4F7F2;
 }
 
 :root {
   --radius: 0.625rem;
   --brand-font: Inter, system-ui, sans-serif;
+  --glass-blur: 16px;
+  --glass-border: color-mix(in srgb, #fff 16%, transparent);
+  --glass-fill-1: color-mix(in srgb, var(--color-brand-secondary) 72%, transparent);
+  --glass-fill-2: color-mix(in srgb, var(--color-brand-secondary) 38%, transparent);
+  --glass-tint: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
@@ -159,48 +156,98 @@
   }
 }
 
-.glass {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  box-shadow: var(--glass-shadow);
-  border-radius: 1rem;
+.app-bg {
+  position: relative;
+  min-height: 100vh;
+  isolation: isolate;
+  background: radial-gradient(120% 90% at 50% -10%, #14492e 0%, var(--color-brand-bg) 55%, #061a10 100%);
+  color: var(--color-brand-text);
+  font-family: var(--brand-font);
 }
-.glass-strong { background: var(--glass-bg-strong); }
+.app-bg::before,
+.app-bg::after {
+  content: "";
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(70px);
+  z-index: -1;
+  pointer-events: none;
+}
+.app-bg::before {
+  width: 380px;
+  height: 380px;
+  background: var(--color-brand-primary);
+  opacity: 0.20;
+  top: -80px;
+  left: -60px;
+}
+.app-bg::after {
+  width: 420px;
+  height: 420px;
+  background: #2f6e46;
+  opacity: 0.28;
+  bottom: -120px;
+  right: -80px;
+}
+
+.glass {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 120% at 0% 0%, var(--glass-tint), transparent 60%),
+    linear-gradient(135deg, var(--glass-fill-1), var(--glass-fill-2));
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 color-mix(in srgb, #fff 26%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, #000 22%, transparent);
+}
+.glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, color-mix(in srgb, #fff 16%, transparent) 50%, transparent 65%);
+  transform: translateX(-130%);
+  animation: glass-sweep 7s ease-in-out infinite;
+}
+@keyframes glass-sweep {
+  0%, 55% { transform: translateX(-130%); }
+  100% { transform: translateX(130%); }
+}
 
 .cta {
-  background: linear-gradient(135deg,
-    var(--color-brand-primary),
-    color-mix(in oklab, var(--color-brand-primary) 60%, var(--color-brand-accent)));
-  color: #fff;
-  border: 1px solid color-mix(in oklab, white 25%, transparent);
-  box-shadow: var(--glow-primary), 0 8px 24px -8px color-mix(in oklab, black 50%, transparent);
-  padding: 0.85rem 1.75rem;
-  border-radius: 999px;
-  font-weight: 600;
+  position: relative;
+  overflow: hidden;
+  border: none;
   cursor: pointer;
-  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+  border-radius: 14px;
+  padding: 11px 18px;
+  font-weight: 800;
+  color: #241a06;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-brand-primary) 88%, #fff), var(--color-brand-primary));
+  box-shadow:
+    0 8px 22px color-mix(in srgb, var(--color-brand-primary) 40%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
-.cta:hover { transform: translateY(-2px); filter: brightness(1.08); }
-.cta:active { transform: translateY(0); }
+.cta:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.blob {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(80px);
-  opacity: 0.55;
-  pointer-events: none;
-  z-index: 0;
-  animation: blob-float 10s ease-in-out infinite alternate;
+.glass-input {
+  background: color-mix(in srgb, #000 24%, transparent);
+  border: 1px solid var(--glass-border);
+  color: var(--color-brand-text);
+  border-radius: 12px;
+  padding: 10px 12px;
+  outline: none;
+  width: 100%;
 }
-
-@keyframes blob-float {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to   { transform: translate3d(30px, -20px, 0) scale(1.1); }
+.glass-input:focus {
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary) 28%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cta { transition: none; }
-  .cta:hover { transform: none; }
-  .blob { animation: none !important; }
+  .glass::after { animation: none; }
 }

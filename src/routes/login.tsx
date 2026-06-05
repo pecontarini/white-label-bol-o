@@ -34,40 +34,41 @@ function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 p-6">
-      <div className="w-full max-w-sm space-y-4 bg-slate-900 border border-slate-800 rounded-xl p-6">
+    <main className="min-h-screen flex items-center justify-center p-6">
+      <div className="glass w-full max-w-sm space-y-4 p-6">
         <h1 className="text-xl font-semibold">Acesso administrativo</h1>
         <div className="space-y-2">
-          <label className="text-xs text-slate-400">E-mail</label>
+          <label className="text-xs opacity-70">E-mail</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-sm"
+            className="glass-input text-sm"
           />
         </div>
         <div className="space-y-2">
-          <label className="text-xs text-slate-400">Senha</label>
+          <label className="text-xs opacity-70">Senha</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-sm"
+            className="glass-input text-sm"
           />
         </div>
-        {msg && <p className="text-sm text-amber-400">{msg}</p>}
+        {msg && <p className="text-sm" style={{ color: "var(--color-brand-primary)" }}>{msg}</p>}
         <div className="flex gap-2">
           <button
             onClick={signIn}
             disabled={busy}
-            className="flex-1 rounded-md bg-blue-600 hover:bg-blue-500 px-3 py-2 text-sm font-medium disabled:opacity-50"
+            className="cta flex-1 text-sm"
           >
             Entrar
           </button>
           <button
             onClick={signUp}
             disabled={busy}
-            className="flex-1 rounded-md bg-slate-700 hover:bg-slate-600 px-3 py-2 text-sm font-medium disabled:opacity-50"
+            className="glass-input flex-1 text-sm font-medium disabled:opacity-50"
+            style={{ cursor: "pointer" }}
           >
             Criar conta
           </button>

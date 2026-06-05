@@ -120,8 +120,10 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <TenantProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
+        <div className="app-bg">
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+        </div>
       </TenantProvider>
     </QueryClientProvider>
   );

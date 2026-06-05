@@ -41,8 +41,7 @@ interface Cliente {
   created_at: string;
 }
 
-const inputCls =
-  "w-full rounded-md bg-slate-800 border border-slate-700 px-2 py-1.5 text-sm text-slate-100";
+const inputCls = "glass-input text-sm";
 
 function PainelPage() {
   const navigate = useNavigate();
@@ -156,7 +155,7 @@ function PainelPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100">
+      <main className="min-h-screen flex items-center justify-center">
         Carregando...
       </main>
     );
@@ -166,51 +165,41 @@ function PainelPage() {
 
   if (role !== "tenant_admin") {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-950 text-slate-100 p-6">
+      <main className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
         <p>Acesso restrito.</p>
-        <button
-          onClick={signOut}
-          className="rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 text-sm"
-        >
-          Sair
-        </button>
+        <button onClick={signOut} className="cta text-sm">Sair</button>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
-      <header className="border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+    <main className="min-h-screen">
+      <header className="px-6 py-4 flex items-center justify-between border-b" style={{ borderColor: "var(--glass-border)" }}>
         <div>
           <h1 className="text-lg font-semibold">{empresa?.nome_empresa ?? "Painel"}</h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs opacity-70">
             {session.user.email} · tenant {empresa?.slug ?? tenantId}
           </p>
         </div>
-        <button
-          onClick={signOut}
-          className="rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 text-sm"
-        >
-          Sair
-        </button>
+        <button onClick={signOut} className="cta text-sm">Sair</button>
       </header>
 
       {err && (
         <div className="px-6 pt-4">
-          <p className="text-sm text-amber-300">{err}</p>
+          <p className="text-sm" style={{ color: "var(--color-brand-primary)" }}>{err}</p>
         </div>
       )}
 
       <div className="grid lg:grid-cols-2 gap-6 p-6">
         {/* Jogo do momento */}
         <section className="glass p-5 space-y-4">
-          <h2 className="text-sm uppercase tracking-wide text-slate-400">Jogo do momento</h2>
+          <h2 className="text-sm uppercase tracking-wide" style={{ color: "var(--color-brand-primary)" }}>Jogo do momento</h2>
 
           <div className="space-y-2">
-            <h3 className="text-xs text-slate-400">Ativar novo jogo</h3>
+            <h3 className="text-xs opacity-70">Ativar novo jogo</h3>
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_80px_auto] gap-2 items-end">
               <label className="block space-y-1">
-                <span className="text-xs text-slate-500">Jogo</span>
+                <span className="text-xs opacity-60">Jogo</span>
                 <select value={jogoSel} onChange={(e) => setJogoSel(e.target.value)} className={inputCls}>
                   <option value="">Selecione...</option>
                   {jogos.map((j) => (
@@ -221,7 +210,7 @@ function PainelPage() {
                 </select>
               </label>
               <label className="block space-y-1">
-                <span className="text-xs text-slate-500">Prêmio</span>
+                <span className="text-xs opacity-60">Prêmio</span>
                 <select value={produtoSel} onChange={(e) => setProdutoSel(e.target.value)} className={inputCls}>
                   <option value="">— sem prêmio —</option>
                   {produtos.filter((p) => p.ativo).map((p) => (
@@ -232,7 +221,7 @@ function PainelPage() {
                 </select>
               </label>
               <label className="block space-y-1">
-                <span className="text-xs text-slate-500">Qtd</span>
+                <span className="text-xs opacity-60">Qtd</span>
                 <input
                   type="number"
                   min={1}
@@ -252,12 +241,12 @@ function PainelPage() {
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-xs text-slate-400">Ativações</h3>
+            <h3 className="text-xs opacity-70">Ativações</h3>
             <ul className="space-y-2">
               {ativos.map((a) => (
                 <li
                   key={a.id}
-                  className="rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-sm flex flex-wrap items-center gap-2"
+                  className="glass p-3 text-sm flex flex-wrap items-center gap-2"
                 >
                   <span className="flex-1 min-w-[180px]">
                     {a.jogos ? a.jogos.time_a + " x " + a.jogos.time_b : a.jogo_id}
@@ -265,7 +254,8 @@ function PainelPage() {
                   <select
                     value={a.status}
                     onChange={(e) => setStatus(a.id, e.target.value)}
-                    className="rounded-md bg-slate-800 border border-slate-700 px-2 py-1 text-xs"
+                    className="glass-input text-xs"
+                    style={{ padding: "4px 8px" }}
                   >
                     <option value="habilitado">habilitado</option>
                     <option value="ativo">ativo</option>
@@ -273,14 +263,15 @@ function PainelPage() {
                   </select>
                   <button
                     onClick={() => togglePalpites(a.id, a.palpites_encerrados)}
-                    className="rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2 py-1 text-xs"
+                    className="glass-input text-xs"
+                    style={{ padding: "4px 8px", cursor: "pointer" }}
                   >
                     {a.palpites_encerrados ? "Reabrir palpites" : "Encerrar palpites"}
                   </button>
                 </li>
               ))}
               {ativos.length === 0 && (
-                <li className="text-slate-500 text-sm">Nenhum jogo ativado ainda.</li>
+                <li className="opacity-60 text-sm">Nenhum jogo ativado ainda.</li>
               )}
             </ul>
           </div>
@@ -288,7 +279,7 @@ function PainelPage() {
 
         {/* Prêmios */}
         <section className="glass p-5 space-y-4">
-          <h2 className="text-sm uppercase tracking-wide text-slate-400">Prêmios</h2>
+          <h2 className="text-sm uppercase tracking-wide" style={{ color: "var(--color-brand-primary)" }}>Prêmios</h2>
           <div className="flex gap-2">
             <input
               value={novoProduto}
@@ -308,38 +299,42 @@ function PainelPage() {
             {produtos.map((p) => (
               <li
                 key={p.id}
-                className="rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-sm flex items-center gap-2"
+                className="glass p-3 text-sm flex items-center gap-2"
               >
                 <span className="flex-1">{p.nome}</span>
                 <span
-                  className={
-                    "inline-block rounded-full px-2 py-0.5 text-xs " +
-                    (p.ativo ? "bg-emerald-900/50 text-emerald-300" : "bg-slate-800 text-slate-400")
-                  }
+                  className="inline-block rounded-full px-2 py-0.5 text-xs"
+                  style={{
+                    background: p.ativo
+                      ? "color-mix(in srgb, var(--color-brand-primary) 25%, transparent)"
+                      : "color-mix(in srgb, #000 35%, transparent)",
+                    color: p.ativo ? "var(--color-brand-primary)" : "var(--color-brand-text)",
+                  }}
                 >
                   {p.ativo ? "ativo" : "inativo"}
                 </span>
                 <button
                   onClick={() => toggleProduto(p)}
-                  className="rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2 py-1 text-xs"
+                  className="glass-input text-xs"
+                  style={{ padding: "4px 8px", cursor: "pointer" }}
                 >
                   {p.ativo ? "Desativar" : "Ativar"}
                 </button>
               </li>
             ))}
-            {produtos.length === 0 && <li className="text-slate-500 text-sm">Sem prêmios cadastrados.</li>}
+            {produtos.length === 0 && <li className="opacity-60 text-sm">Sem prêmios cadastrados.</li>}
           </ul>
         </section>
 
         {/* Participantes */}
         <section className="glass p-5 space-y-3 lg:col-span-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm uppercase tracking-wide text-slate-400">Participantes</h2>
-            <span className="text-xs text-slate-400">{clientes.length} total</span>
+            <h2 className="text-sm uppercase tracking-wide" style={{ color: "var(--color-brand-primary)" }}>Participantes</h2>
+            <span className="text-xs opacity-70">{clientes.length} total</span>
           </div>
-          <div className="overflow-auto border border-slate-800 rounded-lg">
+          <div className="overflow-auto rounded-lg">
             <table className="w-full text-sm">
-              <thead className="bg-slate-900/60 text-slate-400">
+              <thead className="opacity-80" style={{ background: "color-mix(in srgb, #000 25%, transparent)" }}>
                 <tr>
                   <th className="text-left p-3">Nome</th>
                   <th className="text-left p-3">Telefone</th>
@@ -348,17 +343,17 @@ function PainelPage() {
               </thead>
               <tbody>
                 {clientes.map((c) => (
-                  <tr key={c.id} className="border-t border-slate-800">
+                  <tr key={c.id} className="border-t" style={{ borderColor: "var(--glass-border)" }}>
                     <td className="p-3">{c.nome ?? "—"}</td>
-                    <td className="p-3 text-slate-300">{c.telefone ?? "—"}</td>
-                    <td className="p-3 text-slate-400">
+                    <td className="p-3 opacity-90">{c.telefone ?? "—"}</td>
+                    <td className="p-3 opacity-70">
                       {new Date(c.created_at).toLocaleString()}
                     </td>
                   </tr>
                 ))}
                 {clientes.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="p-6 text-center text-slate-500">
+                    <td colSpan={3} className="p-6 text-center opacity-60">
                       Nenhum participante ainda.
                     </td>
                   </tr>

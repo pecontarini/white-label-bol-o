@@ -39,10 +39,10 @@ const EMPTY: FormState = {
   plano: "piloto",
   ativo: true,
   nome_exibicao: "",
-  primaria: "#3B82F6",
-  secundaria: "#1E293B",
-  fundo: "#0B1120",
-  texto: "#E2E8F0",
+  primaria: "#E9B21E",
+  secundaria: "#123A28",
+  fundo: "#0A2417",
+  texto: "#F4F7F2",
   logo_url: "",
   fonte: "",
   subtitulo: "",
@@ -59,10 +59,10 @@ function fromTenant(t: TenantRow): FormState {
     plano: t.plano,
     ativo: t.ativo,
     nome_exibicao: b.nome_exibicao ?? "",
-    primaria: c.primaria ?? "#3B82F6",
-    secundaria: c.secundaria ?? "#1E293B",
-    fundo: c.fundo ?? "#0B1120",
-    texto: c.texto ?? "#E2E8F0",
+    primaria: c.primaria ?? "#E9B21E",
+    secundaria: c.secundaria ?? "#123A28",
+    fundo: c.fundo ?? "#0A2417",
+    texto: c.texto ?? "#F4F7F2",
     logo_url: b.logo_url ?? "",
     fonte: b.fonte ?? "",
     subtitulo: b.textos?.subtitulo ?? "",
@@ -191,7 +191,7 @@ function AdminPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100">
+      <main className="min-h-screen flex items-center justify-center">
         Carregando...
       </main>
     );
@@ -201,42 +201,32 @@ function AdminPage() {
 
   if (role !== "super_admin") {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-950 text-slate-100 p-6">
+      <main className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
         <p>Acesso restrito a super-admin.</p>
-        <button
-          onClick={signOut}
-          className="rounded-md bg-slate-700 hover:bg-slate-600 px-3 py-2 text-sm"
-        >
-          Sair
-        </button>
+        <button onClick={signOut} className="cta text-sm">Sair</button>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
-      <header className="border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+    <main className="min-h-screen">
+      <header className="px-6 py-4 flex items-center justify-between border-b" style={{ borderColor: "var(--glass-border)" }}>
         <div>
           <h1 className="text-lg font-semibold">Super-admin · Empresas</h1>
-          <p className="text-xs text-slate-400">{session.user.email}</p>
+          <p className="text-xs opacity-70">{session.user.email}</p>
         </div>
-        <button
-          onClick={signOut}
-          className="rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 text-sm"
-        >
-          Sair
-        </button>
+        <button onClick={signOut} className="cta text-sm">Sair</button>
       </header>
 
       <div className="grid lg:grid-cols-[1fr_420px] gap-6 p-6">
-        <section>
-          <h2 className="text-sm uppercase tracking-wide text-slate-400 mb-3">
+        <section className="glass p-5">
+          <h2 className="text-sm uppercase tracking-wide opacity-70 mb-3" style={{ color: "var(--color-brand-primary)" }}>
             Empresas cadastradas
           </h2>
-          {listError && <p className="text-amber-400 text-sm mb-2">{listError}</p>}
-          <div className="overflow-auto border border-slate-800 rounded-lg">
+          {listError && <p className="text-sm mb-2" style={{ color: "var(--color-brand-primary)" }}>{listError}</p>}
+          <div className="overflow-auto rounded-lg">
             <table className="w-full text-sm">
-              <thead className="bg-slate-900 text-slate-400">
+              <thead className="opacity-80" style={{ background: "color-mix(in srgb, #000 25%, transparent)" }}>
                 <tr>
                   <th className="text-left p-3">Empresa</th>
                   <th className="text-left p-3">Slug</th>
@@ -248,19 +238,20 @@ function AdminPage() {
               </thead>
               <tbody>
                 {tenants.map((t) => (
-                  <tr key={t.id} className="border-t border-slate-800">
+                  <tr key={t.id} className="border-t" style={{ borderColor: "var(--glass-border)" }}>
                     <td className="p-3">{t.nome_empresa}</td>
-                    <td className="p-3 text-slate-300">{t.slug}</td>
-                    <td className="p-3 text-slate-400">{t.dominio ?? "—"}</td>
+                    <td className="p-3 opacity-90">{t.slug}</td>
+                    <td className="p-3 opacity-70">{t.dominio ?? "—"}</td>
                     <td className="p-3">{t.plano}</td>
                     <td className="p-3">
                       <span
-                        className={
-                          "inline-block rounded-full px-2 py-0.5 text-xs " +
-                          (t.ativo
-                            ? "bg-emerald-900/50 text-emerald-300"
-                            : "bg-slate-800 text-slate-400")
-                        }
+                        className="inline-block rounded-full px-2 py-0.5 text-xs"
+                        style={{
+                          background: t.ativo
+                            ? "color-mix(in srgb, var(--color-brand-primary) 25%, transparent)"
+                            : "color-mix(in srgb, #000 35%, transparent)",
+                          color: t.ativo ? "var(--color-brand-primary)" : "var(--color-brand-text)",
+                        }}
                       >
                         {t.ativo ? "ativo" : "inativo"}
                       </span>
@@ -271,19 +262,22 @@ function AdminPage() {
                           setSaveMsg(null);
                           setForm(fromTenant(t));
                         }}
-                        className="rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2 py-1 text-xs"
+                        className="glass-input text-xs"
+                        style={{ padding: "4px 8px", cursor: "pointer" }}
                       >
                         Editar
                       </button>
                       <button
                         onClick={() => toggleActive(t)}
-                        className="rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2 py-1 text-xs"
+                        className="glass-input text-xs"
+                        style={{ padding: "4px 8px", cursor: "pointer" }}
                       >
                         {t.ativo ? "Desativar" : "Ativar"}
                       </button>
                       <button
                         onClick={() => openCreateAdmin(t)}
-                        className="rounded-md bg-blue-700 hover:bg-blue-600 border border-blue-600 px-2 py-1 text-xs"
+                        className="cta text-xs"
+                        style={{ padding: "4px 10px" }}
                       >
                         Criar admin
                       </button>
@@ -292,7 +286,7 @@ function AdminPage() {
                 ))}
                 {tenants.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-6 text-center text-slate-500">
+                    <td colSpan={6} className="p-6 text-center opacity-60">
                       Nenhuma empresa cadastrada.
                     </td>
                   </tr>
@@ -302,9 +296,9 @@ function AdminPage() {
           </div>
         </section>
 
-        <aside className="space-y-3 bg-slate-900 border border-slate-800 rounded-lg p-4 h-fit">
+        <aside className="glass space-y-3 p-5 h-fit">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm uppercase tracking-wide text-slate-400">
+            <h2 className="text-sm uppercase tracking-wide" style={{ color: "var(--color-brand-primary)" }}>
               {form.id ? "Editar empresa" : "Nova empresa"}
             </h2>
             {form.id && (
@@ -313,7 +307,7 @@ function AdminPage() {
                   setForm(EMPTY);
                   setSaveMsg(null);
                 }}
-                className="text-xs text-slate-400 hover:text-slate-200"
+                className="text-xs opacity-70 hover:opacity-100"
               >
                 cancelar
               </button>
@@ -363,8 +357,8 @@ function AdminPage() {
             Ativo
           </label>
 
-          <div className="border-t border-slate-800 pt-3 space-y-3">
-            <h3 className="text-xs uppercase tracking-wide text-slate-400">Branding</h3>
+          <div className="border-t pt-3 space-y-3" style={{ borderColor: "var(--glass-border)" }}>
+            <h3 className="text-xs uppercase tracking-wide" style={{ color: "var(--color-brand-primary)" }}>Branding</h3>
             <Field label="Nome de exibição">
               <input
                 value={form.nome_exibicao}
@@ -401,12 +395,12 @@ function AdminPage() {
             </Field>
           </div>
 
-          {saveMsg && <p className="text-sm text-amber-400">{saveMsg}</p>}
+          {saveMsg && <p className="text-sm" style={{ color: "var(--color-brand-primary)" }}>{saveMsg}</p>}
 
           <button
             onClick={save}
             disabled={saving || !form.slug || !form.nome_empresa}
-            className="w-full rounded-md bg-blue-600 hover:bg-blue-500 px-3 py-2 text-sm font-medium disabled:opacity-50"
+            className="cta w-full text-sm"
           >
             {form.id ? "Salvar alterações" : "Criar empresa"}
           </button>
@@ -420,11 +414,11 @@ function AdminPage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="glass w-full max-w-sm p-5 space-y-3 text-slate-100"
+            className="glass w-full max-w-sm p-5 space-y-3"
           >
             <div>
               <h3 className="text-base font-semibold">Criar admin da empresa</h3>
-              <p className="text-xs text-slate-400">{adminFor.nome_empresa}</p>
+              <p className="text-xs opacity-70">{adminFor.nome_empresa}</p>
             </div>
             <Field label="E-mail">
               <input
@@ -442,12 +436,13 @@ function AdminPage() {
                 className={inputCls}
               />
             </Field>
-            {adminMsg && <p className="text-sm text-amber-300">{adminMsg}</p>}
+            {adminMsg && <p className="text-sm" style={{ color: "var(--color-brand-primary)" }}>{adminMsg}</p>}
             <div className="flex gap-2 pt-2">
               <button
                 onClick={() => setAdminFor(null)}
                 disabled={adminBusy}
-                className="flex-1 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 text-sm disabled:opacity-50"
+                className="glass-input flex-1 text-sm disabled:opacity-50"
+                style={{ cursor: "pointer" }}
               >
                 Fechar
               </button>
@@ -466,13 +461,12 @@ function AdminPage() {
   );
 }
 
-const inputCls =
-  "w-full rounded-md bg-slate-800 border border-slate-700 px-2 py-1.5 text-sm";
+const inputCls = "glass-input text-sm";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs text-slate-400">{label}</span>
+      <span className="text-xs opacity-70">{label}</span>
       {children}
     </label>
   );
@@ -489,13 +483,14 @@ function ColorField({
 }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs text-slate-400">{label}</span>
+      <span className="text-xs opacity-70">{label}</span>
       <div className="flex items-center gap-2">
         <input
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-8 w-10 rounded border border-slate-700 bg-slate-800"
+          className="h-8 w-10 rounded"
+          style={{ border: "1px solid var(--glass-border)", background: "transparent" }}
         />
         <input
           value={value}
