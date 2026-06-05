@@ -440,8 +440,7 @@ function AdminPage() {
               <button
                 onClick={() => setAdminFor(null)}
                 disabled={adminBusy}
-                className="glass-input flex-1 text-sm disabled:opacity-50"
-                style={{ cursor: "pointer" }}
+                className="btn btn-ghost flex-1 disabled:opacity-50"
               >
                 Fechar
               </button>
