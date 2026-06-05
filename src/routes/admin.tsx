@@ -30,6 +30,7 @@ type FormState = {
   logo_url: string;
   fonte: string;
   subtitulo: string;
+  regulamento: string;
 };
 
 const EMPTY: FormState = {
@@ -46,6 +47,7 @@ const EMPTY: FormState = {
   logo_url: "",
   fonte: "",
   subtitulo: "",
+  regulamento: "",
 };
 
 function fromTenant(t: TenantRow): FormState {
@@ -66,6 +68,7 @@ function fromTenant(t: TenantRow): FormState {
     logo_url: b.logo_url ?? "",
     fonte: b.fonte ?? "",
     subtitulo: b.textos?.subtitulo ?? "",
+    regulamento: b.textos?.regulamento ?? "",
   };
 }
 
@@ -132,7 +135,10 @@ function AdminPage() {
     };
     if (form.logo_url) branding.logo_url = form.logo_url;
     if (form.fonte) branding.fonte = form.fonte;
-    if (form.subtitulo) branding.textos = { subtitulo: form.subtitulo };
+    const textos: Record<string, string> = {};
+    if (form.subtitulo) textos.subtitulo = form.subtitulo;
+    if (form.regulamento) textos.regulamento = form.regulamento;
+    if (Object.keys(textos).length) branding.textos = textos;
 
     const payload = {
       slug: form.slug,
@@ -390,6 +396,14 @@ function AdminPage() {
                 value={form.subtitulo}
                 onChange={(e) => update("subtitulo", e.target.value)}
                 className={inputCls}
+              />
+            </Field>
+            <Field label="Regulamento / como funciona">
+              <textarea
+                value={form.regulamento}
+                onChange={(e) => update("regulamento", e.target.value)}
+                className={inputCls}
+                rows={5}
               />
             </Field>
           </div>

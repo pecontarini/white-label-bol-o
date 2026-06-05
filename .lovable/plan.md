@@ -1,92 +1,66 @@
+## Objetivo
+Transformar o fluxo do participante (já existente na home quando `useTenant().status === "ready"`) em um app com 4 abas (estado local, sem mudar rota), preservar 100% do landing neutro, e adicionar um campo opcional "Regulamento" no formulário do `/admin`. Sem mexer em backend, schema, RLS ou ativar Lovable Cloud.
 
-## Observação importante
+## 1. `src/routes/index.tsx` — refator do `ParticipantFlow`
 
-Na mensagem há dois placeholders "[cole aqui o CSS]" e "[cole o trecho]" que não vieram preenchidos. Vou seguir com valores sensatos consistentes com o que já existe no projeto (tokens já presentes em `src/styles.css`: `--color-brand-primary/secondary/bg/text` e `--brand-font`, e o NEUTRO já definido em `src/lib/branding.ts`). Se você tiver o CSS exato que queria colar, me envie e eu substituo na hora — caso contrário implemento com a proposta abaixo.
+Reescrever o componente `ParticipantFlow` (e auxiliares) mantendo:
+- A renderização condicional do `Home` (neutro continua igual: card landing "Palpite na Mesa").
+- A identidade em `localStorage` chave `pnm:participant:${slug}` (`{ nome, telefone }`), card "Entrar no bolão" quando ausente, e link "trocar".
 
-## O que vou alterar
+Adicionar:
+- **Cabeçalho**: logo (`tenant.branding?.logo_url`) ou `nome_exibicao`, + botão ícone "Como funciona" (abre painel inline, normal-flow, com `branding?.textos?.regulamento` ou texto padrão fornecido).
+- **Estado `aba`** via `useState<"jogos"|"meus"|"ranking"|"premios">("jogos")`.
+- **Barra de abas fixa embaixo** (`position: fixed; bottom: 0`) em `.glass`, mobile-first, com 4 botões; aba ativa colorida com `var(--color-brand-primary)`. Conteúdo principal com `padding-bottom` para não ficar sob a barra.
 
-Tudo frontend. Nenhum toque em Supabase, schema ou Lovable Cloud. Branding continua 100% vindo do tenant via variáveis CSS já aplicadas por `applyBranding()`.
+### Aba "Jogos" (default)
+- `supabase.rpc("app_jogo_ativo", { p_slug: slug })` → `jogo = data?.[0]`.
+- Card `.glass`: `time_a x time_b`, data formatada com `date-fns` pt-BR, e — se `premio_nome` — linha "Em disputa: {premio_quantidade}x {premio_nome}".
+- Inputs `.glass-input` numéricos + botão `.cta` "Enviar palpite" chamando `app_registrar_palpite`. Sucesso: `toast.success("Palpite registrado!")`, recarrega meus palpites + ranking. Erro: `toast.error(error.message)`.
+- Se `palpites_encerrados`: inputs e botão `disabled` + selo "Palpites encerrados".
+- Sem identidade: aviso para entrar no bolão.
+- Sem jogo: card "Nenhum jogo ativo no momento."
 
-### 1) `src/styles.css` — tokens de glass + utilitários
+### Aba "Meus palpites"
+- Exige identidade; senão card pedindo para entrar primeiro.
+- `app_meus_palpites(slug, telefone)`. Cada item em card `.glass`:
+  - "{time_a} x {time_b}", "Meu palpite: {palpite_a} x {palpite_b}".
+  - `status === "encerrado"`: "Resultado: {placar_a} x {placar_b}" + selo "Acertou" (verde) / "Não acertou" (cinza-vermelho) conforme `acertou`.
+  - senão: selo "Aguardando".
+- Vazio: "Você ainda não palpitou."
 
-Adicionar dentro do bloco `@theme` existente (não recriar):
-- `--glass-bg: color-mix(in oklab, white 10%, transparent);`
-- `--glass-bg-strong: color-mix(in oklab, white 18%, transparent);`
-- `--glass-border: color-mix(in oklab, white 22%, transparent);`
-- `--glass-blur: 24px;`
-- `--glass-saturate: 140%;`
-- `--glass-shadow: 0 10px 40px -10px color-mix(in oklab, black 60%, transparent);`
-- `--glow-primary: 0 0 40px color-mix(in oklab, var(--color-brand-primary) 55%, transparent);`
+### Aba "Ranking"
+- `app_ranking(slug)`. Lista posição, nome, "{acertos} pts", com `({palpites})` secundário. Destacar (background sutil em var(--color-brand-primary) 12%) a linha cujo `nome` bate com `ident.nome`. Sem telefone.
 
-Adicionar em `:root` um segundo blob neutro (verde-esmeralda) parametrizado para combinar com o brand:
-- `--color-brand-accent: #10B981;` (fallback neutro; pode ser sobrescrito por `branding.cores.acento` no futuro — sem quebrar nada hoje)
+### Aba "Prêmios"
+- `app_premios(slug)`. Se houver jogo ativo com `premio_nome`, mostrar no topo "Prêmio do jogo atual: {premio_quantidade}x {premio_nome}".
+- Cards `.glass` listando `nome` de cada prêmio.
+- Vazio: "Os prêmios serão divulgados em breve."
 
-Novas classes (fora de `@theme`, no nível de regra normal, NÃO usar `-webkit-backdrop-filter` manualmente — respeitando o gotcha do Tailwind v4):
+### Painel "Como funciona"
+- Estado `mostrarComo: boolean`. Quando true, renderizar um card `.glass` no topo do conteúdo (normal-flow, não fixed) com o texto de regulamento e botão "Fechar".
 
-```css
-.glass {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  box-shadow: var(--glass-shadow);
-  border-radius: 1rem;
-}
-.glass-strong { background: var(--glass-bg-strong); }
+### Carregamento de dados
+- `useEffect`s por aba: carregar lazy ao trocar de aba (ou pré-carregar jogo + ranking na primeira visita). Reaproveitar callbacks `carregarJogo`, `carregarRanking`, `carregarMeus`, `carregarPremios`. Após `enviarPalpite`, chamar `carregarMeus()` + `carregarRanking()`.
 
-.cta {
-  background: linear-gradient(135deg,
-    var(--color-brand-primary),
-    color-mix(in oklab, var(--color-brand-primary) 70%, var(--color-brand-accent)));
-  color: #fff;
-  border: 1px solid color-mix(in oklab, white 25%, transparent);
-  box-shadow: var(--glow-primary), 0 8px 24px -8px color-mix(in oklab, black 50%, transparent);
-  padding: 0.85rem 1.75rem;
-  border-radius: 999px;
-  font-weight: 600;
-  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
-}
-.cta:hover { transform: translateY(-2px); filter: brightness(1.05); }
-.cta:active { transform: translateY(0); }
+## 2. `src/routes/admin.tsx` — campo "Regulamento"
 
-@media (prefers-reduced-motion: reduce) {
-  .cta { transition: none; }
-  .cta:hover { transform: none; }
-  .blob { animation: none !important; }
-}
-```
+- Adicionar campo `regulamento: string` em `FormState` e `EMPTY`.
+- Em `fromTenant`: `regulamento: b.textos?.regulamento ?? ""`.
+- Em `save()`, substituir o bloco atual `if (form.subtitulo) branding.textos = ...` por:
+  ```ts
+  const textos: Record<string,string> = {};
+  if (form.subtitulo) textos.subtitulo = form.subtitulo;
+  if (form.regulamento) textos.regulamento = form.regulamento;
+  if (Object.keys(textos).length) branding.textos = textos;
+  ```
+- Adicionar `<Field label="Regulamento / como funciona">` com `<textarea>` usando `className={inputCls}` (`.glass-input`), após o campo "Subtítulo".
 
-### 2) `src/lib/branding.ts` — NEUTRO Palpite na Mesa
+## Regras
+- `p_slug` sempre = `tenant.slug`; nunca enviar `tenant_id`.
+- Cores apenas via variáveis de marca (`var(--color-brand-*)`, `var(--glass-*)`).
+- Mobile-first, `.glass` / `.glass-input` / `.cta` / `.btn` já existentes; respeita `prefers-reduced-motion` (sem novas animações).
+- Sem mudanças no backend; sem ativar Lovable Cloud.
 
-Atualizar o objeto `NEUTRO` mantendo a forma atual. Proposta (paleta dark premium, alinhada com o que já está lá):
-- `primaria: "#6366F1"` (indigo)
-- `secundaria: "#0EA5E9"` (sky)
-- `fundo: "#0B1120"` (mantém)
-- `texto: "#E2E8F0"` (mantém)
-- `fonte: "Inter, system-ui, sans-serif"` (mantém)
-
-E aplicar também `--color-brand-accent` em `applyBranding()` lendo de `branding.cores.acento` com fallback `#10B981`, para o blob/CTA não ficar engessado.
-
-### 3) `src/routes/index.tsx` — home com glass + blobs
-
-Refazer o JSX sem nenhuma cor hardcoded:
-- Container `<main>` com `position: relative; overflow: hidden;` e fundo:
-  `background: radial-gradient(1200px 600px at 20% 10%, color-mix(in oklab, var(--color-brand-primary) 25%, transparent), transparent 60%), radial-gradient(900px 500px at 90% 90%, color-mix(in oklab, var(--color-brand-accent) 20%, transparent), transparent 60%), var(--color-brand-bg);`
-- Dois `<div className="blob" />` absolutos atrás do conteúdo (`z-index:-1`, `filter: blur(80px)`, opacidade ~0.6), um com `background: var(--color-brand-primary)` no topo-esquerda e outro com `background: var(--color-brand-accent)` no canto inferior-direito. Animação suave (translate/scale 8s ease-in-out infinite alternate) — desligada por `prefers-reduced-motion`.
-- Conteúdo central virando um `<section className="glass">` com padding generoso, contendo logo/nome, título "Copa do Mundo FIFA 2026", subtítulo do branding e o botão "Entrar no bolão" com `className="cta"`.
-- Rodapé de status (`tema neutro` / `Tenant: slug`) mantido, com `opacity .6`.
-
-Sem `bg-*` fixos, sem `text-white` etc. — só variáveis `--color-brand-*` e as classes `.glass` / `.cta`.
-
-### 4) Acessibilidade / motion
-
-- Todo movimento (blobs + hover do CTA) sob `@media (prefers-reduced-motion: reduce)` → desliga animação e transform.
-- `backdrop-filter` apenas via classe `.glass` (sem prefix manual — Lightning CSS prefixa).
-
-## Fora de escopo
-
-- Nada de backend, RLS, schema, edge functions, Lovable Cloud.
-- Não toco em `/login`, `/admin`, `TenantProvider`, store, ou client Supabase.
-
-## Pergunta opcional antes de implementar
-
-Quer que eu use exatamente o CSS/paleta que você ia colar? Se sim, cole aqui e eu ajusto os valores antes de aplicar. Senão, sigo com a proposta acima.
+## Arquivos
+- editar `src/routes/index.tsx`
+- editar `src/routes/admin.tsx`
