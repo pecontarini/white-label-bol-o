@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -529,6 +530,11 @@ function Home() {
           {status === "neutro"
             ? "Tema neutro (nenhuma empresa identificada)"
             : "Tenant: " + (tenant?.slug ?? "")}
+        </div>
+        <div className="mt-4 text-xs opacity-70">
+          <Link to="/cadastro" className="underline hover:opacity-100">
+            Seja um parceiro
+          </Link>
         </div>
       </section>
     </main>

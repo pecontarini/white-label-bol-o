@@ -15,6 +15,16 @@ interface TenantRow {
   created_at: string;
 }
 
+interface LeadRow {
+  id: string;
+  created_at: string;
+  status: string;
+  dados: Record<string, any> | null;
+}
+
+type AdminTab = "empresas" | "leads";
+const LEAD_STATUSES = ["novo", "em_analise", "contratado", "descartado"] as const;
+
 type FormState = {
   id?: string;
   slug: string;
@@ -85,6 +95,10 @@ function AdminPage() {
   const [adminPassword, setAdminPassword] = useState("");
   const [adminBusy, setAdminBusy] = useState(false);
   const [adminMsg, setAdminMsg] = useState<string | null>(null);
+  const [tab, setTab] = useState<AdminTab>("empresas");
+  const [leads, setLeads] = useState<LeadRow[]>([]);
+  const [leadsError, setLeadsError] = useState<string | null>(null);
+  const [expandedLead, setExpandedLead] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -95,6 +109,18 @@ function AdminPage() {
     else {
       setListError(null);
       setTenants((data ?? []) as TenantRow[]);
+    }
+  }, []);
+
+  const loadLeads = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("leads")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) setLeadsError(error.message);
+    else {
+      setLeadsError(null);
+      setLeads((data ?? []) as LeadRow[]);
     }
   }, []);
 
@@ -111,6 +137,16 @@ function AdminPage() {
     }
     load();
   }, [loading, session, role, navigate, load]);
+
+  useEffect(() => {
+    if (role === "super_admin" && tab === "leads") loadLeads();
+  }, [role, tab, loadLeads]);
+
+  async function updateLeadStatus(id: string, status: string) {
+    const { error } = await supabase.from("leads").update({ status }).eq("id", id);
+    if (error) setLeadsError(error.message);
+    else loadLeads();
+  }
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -224,6 +260,86 @@ function AdminPage() {
         <button onClick={signOut} className="cta text-sm">Sair</button>
       </header>
 
+      <div className="px-6 pt-4 flex gap-2">
+        {(["empresas", "leads"] as AdminTab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={tab === t ? "btn btn-sm btn-primary" : "btn btn-sm btn-ghost"}
+          >
+            {t === "empresas" ? "Empresas" : "Leads"}
+          </button>
+        ))}
+      </div>
+
+      {tab === "leads" ? (
+        <section className="glass m-6 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm uppercase tracking-wide" style={{ color: "var(--color-brand-primary)" }}>
+              Leads recebidos
+            </h2>
+            <button onClick={loadLeads} className="btn btn-sm btn-ghost">Recarregar</button>
+          </div>
+          {leadsError && (
+            <p className="text-sm mb-2" style={{ color: "var(--color-brand-primary)" }}>{leadsError}</p>
+          )}
+          {leads.length === 0 ? (
+            <p className="text-sm opacity-70">Nenhum lead ainda.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {leads.map((l) => {
+                const d = (l.dados ?? {}) as Record<string, any>;
+                const nome = d.nome_fantasia || d.razao_social || "(sem nome)";
+                const email = d.contato_email || d.rep_email || "—";
+                const slug = d.slug_desejado || "—";
+                const isOpen = expandedLead === l.id;
+                return (
+                  <div key={l.id} className="rounded-lg border p-3" style={{ borderColor: "var(--glass-border)" }}>
+                    <div className="flex flex-wrap items-center gap-3 justify-between">
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{nome}</div>
+                        <div className="text-xs opacity-70">
+                          {new Date(l.created_at).toLocaleString("pt-BR")} · {email} · slug: {slug}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={l.status}
+                          onChange={(e) => updateLeadStatus(l.id, e.target.value)}
+                          className="glass-input text-xs"
+                          style={{ width: "auto" }}
+                        >
+                          {LEAD_STATUSES.map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => setExpandedLead(isOpen ? null : l.id)}
+                          className="btn btn-sm btn-ghost"
+                        >
+                          {isOpen ? "fechar" : "ver tudo"}
+                        </button>
+                      </div>
+                    </div>
+                    {isOpen && (
+                      <div className="mt-3 grid sm:grid-cols-2 gap-2 text-xs">
+                        {Object.entries(d).map(([k, v]) => (
+                          <div key={k} className="rounded p-2" style={{ background: "color-mix(in srgb, #000 25%, transparent)" }}>
+                            <div className="opacity-60 uppercase tracking-wide" style={{ fontSize: 10 }}>{k}</div>
+                            <div className="whitespace-pre-wrap break-words">
+                              {typeof v === "object" ? JSON.stringify(v, null, 2) : String(v)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      ) : (
       <div className="grid lg:grid-cols-[1fr_420px] gap-6 p-6">
         <section className="glass p-5">
           <h2 className="text-sm uppercase tracking-wide opacity-70 mb-3" style={{ color: "var(--color-brand-primary)" }}>
@@ -419,6 +535,7 @@ function AdminPage() {
           </button>
         </aside>
       </div>
+      )}
 
       {adminFor && (
         <div
