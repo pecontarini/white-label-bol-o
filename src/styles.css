@@ -1,3 +1,9 @@
+/* =====================================================================
+   Palpite na Mesa — tema portado do Bolão Caju Limão.
+   O VISUAL é idêntico ao Caju; as CORES são dinâmicas por tenant:
+   os tokens --cl-* abaixo leem as CSS vars --color-brand-* aplicadas
+   em runtime por src/lib/branding.ts (a partir do branding do tenant).
+   ===================================================================== */
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
@@ -5,17 +11,8 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ * Bolão Caju Limão — design system
+ * Paleta de boteco brasileiro, tokens em oklch (Tailwind v4).
  */
 
 @theme inline {
@@ -25,7 +22,6 @@
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -59,90 +55,71 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-}
 
-@theme {
-  --color-brand-primary: #E9B21E;
-  --color-brand-secondary: #123A28;
-  --color-brand-bg: #0A2417;
-  --color-brand-text: #F4F7F2;
+  /* Marca Caju Limão */
+  --color-cl-verde: var(--cl-verde);
+  --color-cl-verde-escuro: var(--cl-verde-escuro);
+  --color-cl-laranja: var(--cl-laranja);
+  --color-cl-verde-claro: var(--cl-verde-claro);
+  --color-cl-cinza-bg: var(--cl-cinza-bg);
+  --color-cl-cinza-texto: var(--cl-cinza-texto);
+  --color-cl-sucesso: var(--cl-sucesso);
+  --color-cl-erro: var(--cl-erro);
+  --color-cl-aviso: var(--cl-aviso);
+
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "Inter", system-ui, sans-serif;
 }
 
 :root {
-  --radius: 0.625rem;
-  --brand-font: Inter, system-ui, sans-serif;
-  --glass-blur: 16px;
-  --glass-border: color-mix(in srgb, #fff 16%, transparent);
-  --glass-fill-1: color-mix(in srgb, var(--color-brand-secondary) 72%, transparent);
-  --glass-fill-2: color-mix(in srgb, var(--color-brand-secondary) 38%, transparent);
-  --glass-tint: color-mix(in srgb, var(--color-brand-primary) 6%, transparent);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
-}
+  --radius: 0.75rem;
 
-.dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  /* Marca dinâmica por tenant — religada às CSS vars setadas em branding.ts.
+     Fallback = paleta neutra Palpite na Mesa. Cada empresa pinta o mesmo
+     visual do Caju com a própria cor (primária/secundária/acento/bg/texto). */
+  --cl-verde: var(--color-brand-primary, #123A28);
+  --cl-verde-escuro: var(--color-brand-secondary, #0A2417);
+  --cl-laranja: var(--color-brand-accent, var(--color-brand-primary, #E9B21E));
+  --cl-verde-claro: color-mix(in oklab, var(--color-brand-primary, #123A28) 18%, white);
+  --cl-cinza-bg: var(--color-brand-bg, #F5F2EA);
+  --cl-cinza-texto: color-mix(in oklab, var(--color-brand-text, #5F5E5A) 70%, transparent);
+  --cl-sucesso: oklch(0.48 0.13 135);
+  --cl-erro: oklch(0.48 0.16 28);
+  --cl-aviso: oklch(0.61 0.13 70);
+
+  /* Tokens semânticos -> marca */
+  --background: var(--color-brand-bg, #F7F5EF);
+  --foreground: var(--color-brand-text, #1C3B16);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.31 0.07 138);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.31 0.07 138);
+  --primary: oklch(0.42 0.09 135);
+  --primary-foreground: oklch(0.98 0.01 90);
+  --secondary: oklch(0.92 0.08 115);
+  --secondary-foreground: oklch(0.31 0.07 138);
+  --muted: oklch(0.93 0.01 90);
+  --muted-foreground: oklch(0.43 0.005 90);
+  --accent: oklch(0.79 0.13 65);
+  --accent-foreground: oklch(0.31 0.07 138);
+  --destructive: oklch(0.48 0.16 28);
+  --destructive-foreground: oklch(0.98 0.01 90);
+  --border: oklch(0.88 0.02 100);
+  --input: oklch(0.88 0.02 100);
+  --ring: oklch(0.42 0.09 135);
+  --chart-1: oklch(0.42 0.09 135);
+  --chart-2: oklch(0.79 0.13 65);
+  --chart-3: oklch(0.92 0.08 115);
+  --chart-4: oklch(0.48 0.13 135);
+  --chart-5: oklch(0.61 0.13 70);
+  --sidebar: oklch(0.31 0.07 138);
+  --sidebar-foreground: oklch(0.98 0.01 90);
+  --sidebar-primary: oklch(0.79 0.13 65);
+  --sidebar-primary-foreground: oklch(0.31 0.07 138);
+  --sidebar-accent: oklch(0.42 0.09 135);
+  --sidebar-accent-foreground: oklch(0.98 0.01 90);
+  --sidebar-border: oklch(0.42 0.09 135);
+  --sidebar-ring: oklch(0.79 0.13 65);
 }
 
 @layer base {
@@ -150,135 +127,229 @@
     border-color: var(--color-border);
   }
 
-  body {
-    background-color: var(--color-background);
+  html, body {
     color: var(--color-foreground);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  body {
+    background-color: var(--color-brand-bg, #F7F5EF);
+    position: relative;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url("/assets/16-textura-geometrica.png");
+    background-repeat: repeat;
+    background-size: 360px;
+    opacity: 0.045;
+    filter: saturate(0.6);
+  }
+  body[data-textura="floral"]::before {
+    background-image: url("/assets/15-textura-floral.png");
+    background-size: 400px;
+    opacity: 0.05;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+
+  table {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
   }
 }
 
-.app-bg {
-  position: relative;
-  min-height: 100vh;
-  isolation: isolate;
-  background: radial-gradient(120% 90% at 50% -10%, #14492e 0%, var(--color-brand-bg) 55%, #061a10 100%);
-  color: var(--color-brand-text);
-  font-family: var(--brand-font);
-}
-.app-bg::before,
-.app-bg::after {
-  content: "";
-  position: fixed;
-  border-radius: 50%;
-  filter: blur(70px);
-  z-index: -1;
-  pointer-events: none;
-}
-.app-bg::before {
-  width: 380px;
-  height: 380px;
-  background: var(--color-brand-primary);
-  opacity: 0.10;
-  top: -80px;
-  left: -60px;
-}
-.app-bg::after {
-  width: 420px;
-  height: 420px;
-  background: #2f6e46;
-  opacity: 0.16;
-  bottom: -120px;
-  right: -80px;
+@layer utilities {
+  .glass {
+    position: relative;
+    background-color: rgba(255, 255, 255, 0.80);
+    backdrop-filter: blur(12px) saturate(1.15);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow:
+      0 4px 20px rgba(28, 59, 22, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+  .glass-data {
+    background-color: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(10px) saturate(1.1);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    box-shadow:
+      0 4px 20px rgba(28, 59, 22, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  }
+  .glass-sticky {
+    background-color: rgba(247, 245, 239, 0.82);
+    backdrop-filter: blur(14px) saturate(1.2);
+    border-bottom: 1px solid rgba(28, 59, 22, 0.06);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass { background-color: rgba(255, 255, 255, 0.96); }
+    .glass-sticky { background-color: rgba(247, 245, 239, 0.96); }
+    .glass-data { background-color: #fff; }
+  }
+  .glass-dark {
+    background-color: color-mix(in oklab, var(--cl-verde-escuro) 80%, transparent);
+    backdrop-filter: blur(14px) saturate(140%);
+    border: 1px solid color-mix(in oklab, white 18%, transparent);
+    color: white;
+  }
+  .tela-titulo {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(28px, 6vw, 32px);
+    line-height: 1.1;
+    color: var(--cl-verde);
+    letter-spacing: -0.015em;
+  }
+  .secao-titulo {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(22px, 4.5vw, 24px);
+    line-height: 1.15;
+    color: var(--cl-verde);
+    letter-spacing: -0.01em;
+  }
+  .badge-palpite {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: color-mix(in oklab, var(--cl-laranja) 28%, white);
+    color: var(--cl-verde-escuro);
+    border: 1px solid color-mix(in oklab, var(--cl-laranja) 55%, transparent);
+  }
+  .badge-encerrado {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: rgba(0,0,0,0.06);
+    color: var(--cl-cinza-texto);
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    letter-spacing: 0;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 9999px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    border: 1px solid color-mix(in oklab, var(--cl-verde-escuro) 14%, transparent);
+    background: #fff;
+    color: var(--cl-verde-escuro);
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .chip[data-active="true"] {
+    background: var(--cl-verde);
+    color: #fff;
+    border-color: var(--cl-verde);
+    box-shadow: 0 4px 12px -8px color-mix(in oklab, var(--cl-verde) 70%, transparent);
+  }
+  .tab-underline {
+    position: relative;
+    padding: 10px 14px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: color-mix(in oklab, var(--cl-cinza-texto) 80%, transparent);
+    transition: color .15s ease;
+  }
+  .tab-underline[data-active="true"] {
+    color: var(--cl-verde-escuro);
+  }
+  .tab-underline[data-active="true"]::after {
+    content: "";
+    position: absolute;
+    left: 12px; right: 12px; bottom: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--cl-verde);
+  }
+  .safe-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .safe-top {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+  .placar-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 0.85rem;
+    background: var(--cl-verde-escuro);
+    color: #fff;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    line-height: 1;
+    box-shadow: 0 6px 18px -10px color-mix(in oklab, var(--cl-verde-escuro) 80%, transparent);
+  }
+  .placar-chip .x {
+    color: color-mix(in oklab, white 55%, transparent);
+    font-size: 0.85em;
+  }
+  .pulse-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 9999px;
+    background: var(--cl-sucesso);
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--cl-sucesso) 70%, transparent);
+    animation: pulse-dot 1.8s ease-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--cl-sucesso) 70%, transparent); }
+    70%  { box-shadow: 0 0 0 8px color-mix(in oklab, var(--cl-sucesso) 0%, transparent); }
+    100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--cl-sucesso) 0%, transparent); }
+  }
+  .card-press {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .card-press:active {
+    transform: scale(0.985);
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
 }
 
-.glass {
-  position: relative;
-  border-radius: 16px;
-  background:
-    radial-gradient(140% 120% at 100% 0%, var(--glass-tint), transparent 55%),
-    color-mix(in srgb, var(--color-brand-secondary) 32%, transparent);
-  border: 1px solid color-mix(in srgb, #fff 8%, transparent);
-  -webkit-backdrop-filter: blur(14px) saturate(120%);
-  backdrop-filter: blur(14px) saturate(120%);
-  box-shadow:
-    0 10px 30px -12px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
-}
-
-.cta {
-  position: relative;
-  overflow: hidden;
-  border: none;
-  cursor: pointer;
-  border-radius: 14px;
-  padding: 11px 18px;
-  font-weight: 800;
-  color: #241a06;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--color-brand-primary) 88%, #fff), var(--color-brand-primary));
-  box-shadow:
-    0 8px 22px color-mix(in srgb, var(--color-brand-primary) 40%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.65);
-}
-.cta:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 38px;
-  padding: 0 16px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: background 0.15s, border-color 0.15s, filter 0.15s, transform 0.05s;
-}
-.btn:active { transform: translateY(1px); }
-.btn-sm { height: 32px; padding: 0 12px; font-size: 12.5px; border-radius: 9px; }
-.btn-primary {
-  color: #241a06;
-  border: none;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--color-brand-primary) 90%, #fff), var(--color-brand-primary));
-  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--color-brand-primary) 60%, transparent);
-}
-.btn-primary:hover { filter: brightness(1.05); }
-.btn-ghost {
-  background: color-mix(in srgb, #fff 5%, transparent);
-  color: var(--color-brand-text);
-  border: 1px solid color-mix(in srgb, #fff 12%, transparent);
-}
-.btn-ghost:hover { background: color-mix(in srgb, #fff 10%, transparent); }
-.btn-danger {
-  background: transparent;
-  color: #ff8a8a;
-  border: 1px solid color-mix(in srgb, #ff6b6b 30%, transparent);
-}
-.btn-danger:hover { background: color-mix(in srgb, #ff6b6b 12%, transparent); }
-.actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.glass-input {
-  background: color-mix(in srgb, #000 24%, transparent);
-  border: 1px solid var(--glass-border);
-  color: var(--color-brand-text);
-  border-radius: 12px;
-  padding: 10px 12px;
-  outline: none;
-  width: 100%;
-}
-.glass-input:focus {
-  border-color: var(--color-brand-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary) 28%, transparent);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  /* nothing to disable on glass now */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
