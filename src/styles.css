@@ -83,9 +83,9 @@
   --cl-verde-claro: color-mix(in oklab, var(--color-brand-primary, #123A28) 18%, white);
   --cl-cinza-bg: var(--color-brand-bg, #F5F2EA);
   --cl-cinza-texto: color-mix(in oklab, var(--color-brand-text, #5F5E5A) 70%, transparent);
-  --cl-sucesso: oklch(0.48 0.13 135);
-  --cl-erro: oklch(0.48 0.16 28);
-  --cl-aviso: oklch(0.61 0.13 70);
+  --cl-sucesso: oklch(0.48 0.13 135);        /* #3B6D11 */
+  --cl-erro: oklch(0.48 0.16 28);            /* #A32D2D */
+  --cl-aviso: oklch(0.61 0.13 70);           /* #BA7517 */
 
   /* Tokens semânticos -> marca */
   --background: var(--color-brand-bg, #F7F5EF);
@@ -134,6 +134,9 @@
     font-feature-settings: "cv11", "ss01";
   }
 
+  /* Fundo base claro, levemente esverdeado. A textura Caju vem por cima
+     como uma camada fixa atrás de todo o conteúdo (ver ::before abaixo),
+     com opacidade muito baixa — um "sussurro" da identidade. */
   body {
     background-color: var(--color-brand-bg, #F7F5EF);
     position: relative;
@@ -148,6 +151,7 @@
     background-repeat: repeat;
     background-size: 360px;
     opacity: 0.045;
+    /* Tinge a textura no verde Caju discreto */
     filter: saturate(0.6);
   }
   body[data-textura="floral"]::before {
@@ -177,6 +181,7 @@
       0 4px 20px rgba(28, 59, 22, 0.06),
       inset 0 1px 0 rgba(255, 255, 255, 0.6);
   }
+  /* Vidro mais fechado para tabelas e blocos com muita informação numérica. */
   .glass-data {
     background-color: rgba(255, 255, 255, 0.55);
     backdrop-filter: blur(10px) saturate(1.1);
@@ -185,6 +190,7 @@
       0 4px 20px rgba(28, 59, 22, 0.05),
       inset 0 1px 0 rgba(255, 255, 255, 0.55);
   }
+  /* Vidro fino (sticky / header / tabbar). */
   .glass-sticky {
     background-color: rgba(247, 245, 239, 0.82);
     backdrop-filter: blur(14px) saturate(1.2);
@@ -201,6 +207,7 @@
     border: 1px solid color-mix(in oklab, white 18%, transparent);
     color: white;
   }
+  /* Tipografia destacada para títulos. */
   .tela-titulo {
     font-family: var(--font-display);
     font-weight: 700;
