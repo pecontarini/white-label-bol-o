@@ -77,12 +77,26 @@
   /* Marca dinâmica por tenant — religada às CSS vars setadas em branding.ts.
      Fallback = paleta neutra Palpite na Mesa. Cada empresa pinta o mesmo
      visual do Caju com a própria cor (primária/secundária/acento/bg/texto). */
+  /* Acento primário (links, destaques, botões). */
   --cl-verde: var(--color-brand-primary, #123A28);
-  --cl-verde-escuro: var(--color-brand-secondary, #0A2417);
-  --cl-laranja: var(--color-brand-accent, var(--color-brand-primary, #E9B21E));
-  --cl-verde-claro: color-mix(in oklab, var(--color-brand-primary, #123A28) 18%, white);
+  /* TEXTO PRINCIPAL e títulos. No tema Caju "verde-escuro" é a cor de texto
+     dominante, então ela DEVE ser a cor de texto da marca (legível sobre o
+     fundo, claro ou escuro). NÃO usar a secundária aqui. */
+  --cl-verde-escuro: var(--color-brand-text, #0A2417);
+  /* Acento secundário (badges, realces). */
+  --cl-laranja: var(--color-brand-accent, var(--color-brand-secondary, var(--color-brand-primary, #E9B21E)));
+  --cl-verde-claro: color-mix(in oklab, var(--color-brand-primary, #123A28) 22%, transparent);
   --cl-cinza-bg: var(--color-brand-bg, #F5F2EA);
-  --cl-cinza-texto: color-mix(in oklab, var(--color-brand-text, #5F5E5A) 70%, transparent);
+  /* Texto secundário = texto da marca esmaecido (adapta a claro/escuro). */
+  --cl-cinza-texto: color-mix(in oklab, var(--color-brand-text, #5F5E5A) 62%, transparent);
+  /* Superfície elevada (cards/glass): camada do PRÓPRIO texto da marca em baixa
+     opacidade. Em fundo escuro clareia; em fundo claro escurece — sempre
+     contrasta com o fundo, porque brand-text contrasta com brand-bg. */
+  --surface-1: color-mix(in srgb, var(--color-brand-text, #1C3B16) 7%, transparent);
+  --surface-2: color-mix(in srgb, var(--color-brand-text, #1C3B16) 11%, transparent);
+  --surface-border: color-mix(in srgb, var(--color-brand-text, #1C3B16) 14%, transparent);
+  /* Fundo da marca translúcido (para header/abas sticky seguirem a cor). */
+  --surface-sticky: color-mix(in srgb, var(--color-brand-bg, #F7F5EF) 82%, transparent);
   --cl-sucesso: oklch(0.48 0.13 135);        /* #3B6D11 */
   --cl-erro: oklch(0.48 0.16 28);            /* #A32D2D */
   --cl-aviso: oklch(0.61 0.13 70);           /* #BA7517 */
@@ -104,7 +118,7 @@
   --accent-foreground: oklch(0.31 0.07 138);
   --destructive: oklch(0.48 0.16 28);
   --destructive-foreground: oklch(0.98 0.01 90);
-  --border: oklch(0.88 0.02 100);
+  --border: var(--surface-border);
   --input: oklch(0.88 0.02 100);
   --ring: oklch(0.42 0.09 135);
   --chart-1: oklch(0.42 0.09 135);
@@ -174,32 +188,36 @@
 @layer utilities {
   .glass {
     position: relative;
-    background-color: rgba(255, 255, 255, 0.80);
+    /* base no fundo da marca + uma camada elevada adaptativa por cima. */
+    background-color: var(--color-brand-bg, #F7F5EF);
+    background-image: linear-gradient(var(--surface-1), var(--surface-1));
     backdrop-filter: blur(12px) saturate(1.15);
-    border: 1px solid rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--surface-border);
     box-shadow:
-      0 4px 20px rgba(28, 59, 22, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      0 4px 20px rgba(0, 0, 0, 0.10),
+      inset 0 1px 0 color-mix(in srgb, var(--color-brand-text, #fff) 8%, transparent);
   }
   /* Vidro mais fechado para tabelas e blocos com muita informação numérica. */
   .glass-data {
-    background-color: rgba(255, 255, 255, 0.55);
+    background-color: var(--color-brand-bg, #F7F5EF);
+    background-image: linear-gradient(var(--surface-2), var(--surface-2));
     backdrop-filter: blur(10px) saturate(1.1);
-    border: 1px solid rgba(255, 255, 255, 0.65);
+    border: 1px solid var(--surface-border);
     box-shadow:
-      0 4px 20px rgba(28, 59, 22, 0.05),
-      inset 0 1px 0 rgba(255, 255, 255, 0.55);
+      0 4px 20px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 color-mix(in srgb, var(--color-brand-text, #fff) 7%, transparent);
   }
   /* Vidro fino (sticky / header / tabbar). */
   .glass-sticky {
-    background-color: rgba(247, 245, 239, 0.82);
+    /* segue a cor de fundo da marca (translúcida), não creme fixo. */
+    background-color: var(--surface-sticky);
     backdrop-filter: blur(14px) saturate(1.2);
-    border-bottom: 1px solid rgba(28, 59, 22, 0.06);
+    border-bottom: 1px solid var(--surface-border);
   }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .glass { background-color: rgba(255, 255, 255, 0.96); }
-    .glass-sticky { background-color: rgba(247, 245, 239, 0.96); }
-    .glass-data { background-color: #fff; }
+    .glass { background-image: linear-gradient(var(--surface-2), var(--surface-2)); }
+    .glass-sticky { background-color: var(--color-brand-bg, #F7F5EF); }
+    .glass-data { background-image: linear-gradient(var(--surface-2), var(--surface-2)); }
   }
   .glass-dark {
     background-color: color-mix(in oklab, var(--cl-verde-escuro) 80%, transparent);
@@ -234,9 +252,11 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    background: color-mix(in oklab, var(--cl-laranja) 28%, white);
-    color: var(--cl-verde-escuro);
-    border: 1px solid color-mix(in oklab, var(--cl-laranja) 55%, transparent);
+    /* fundo = acento da marca; texto = versão bem escura do MESMO acento,
+       garantindo contraste independente de a marca ser clara ou escura. */
+    background: color-mix(in srgb, var(--cl-laranja) 88%, white);
+    color: color-mix(in srgb, var(--cl-laranja) 30%, black);
+    border: 1px solid color-mix(in srgb, var(--cl-laranja) 60%, transparent);
   }
   .badge-encerrado {
     display: inline-flex;
