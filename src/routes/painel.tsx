@@ -41,7 +41,22 @@ interface Cliente {
   created_at: string;
 }
 
-const inputCls = "glass-input text-sm";
+/* ===================================================================
+   Painel do lojista — Palpite na Mesa.
+   Visual claro/clean com identidade da marca (header na cor primária,
+   acentos da empresa, fundo com leve toque de marca). Toda a lógica
+   (RPCs, RLS, funções) é idêntica à versão funcional.
+   =================================================================== */
+
+const FASE_LABEL: Record<string, string> = {
+  GROUP_STAGE: "Fase de grupos",
+  LAST_32: "16-avos",
+  LAST_16: "Oitavas",
+  QUARTER_FINALS: "Quartas",
+  SEMI_FINALS: "Semifinal",
+  THIRD_PLACE: "3º lugar",
+  FINAL: "Final",
+};
 
 function PainelPage() {
   const navigate = useNavigate();
@@ -155,8 +170,8 @@ function PainelPage() {
 
   if (loading) {
     return (
-      <main className="app-bg min-h-screen flex items-center justify-center">
-        Carregando...
+      <main className="painel-bg min-h-screen flex items-center justify-center">
+        <p className="painel-muted">Carregando...</p>
       </main>
     );
   }
@@ -165,203 +180,206 @@ function PainelPage() {
 
   if (role !== "tenant_admin") {
     return (
-      <main className="app-bg min-h-screen flex flex-col items-center justify-center gap-4 p-6">
-        <p>Acesso restrito.</p>
-        <button onClick={signOut} className="cta text-sm">Sair</button>
+      <main className="painel-bg min-h-screen flex flex-col items-center justify-center gap-4 p-6">
+        <p className="painel-ink">Acesso restrito.</p>
+        <button onClick={signOut} className="painel-btn-primary">Sair</button>
       </main>
     );
   }
 
+  const logo = (empresa?.branding as { logo_url?: string } | null)?.logo_url;
+
   return (
-    <main className="app-bg min-h-screen">
-      <header className="px-6 py-4 flex items-center justify-between border-b" style={{ borderColor: "var(--glass-border)" }}>
-        <div>
-          <h1 className="text-lg font-semibold">{empresa?.nome_empresa ?? "Painel"}</h1>
-          <p className="text-xs opacity-70">
-            {session.user.email} · tenant {empresa?.slug ?? tenantId}
-          </p>
-        </div>
-        <button onClick={signOut} className="cta text-sm">Sair</button>
-      </header>
+    <main className="painel-bg min-h-screen">
+      {/* Faixa de marca */}
+      <div className="painel-brandbar" />
 
-      {err && (
-        <div className="px-6 pt-4">
-          <p className="text-sm" style={{ color: "var(--color-brand-primary)" }}>{err}</p>
-        </div>
-      )}
-
-      <div className="grid lg:grid-cols-2 gap-6 p-6">
-        {/* Jogo do momento */}
-        <section className="glass p-5 space-y-4">
-          <h2 className="text-sm uppercase tracking-wide" style={{ color: "var(--color-brand-primary)" }}>Jogo do momento</h2>
-
-          <div className="space-y-2">
-            <h3 className="text-xs opacity-70">Ativar novo jogo</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_80px_auto] gap-2 items-end">
-              <label className="block space-y-1">
-                <span className="text-xs opacity-60">Jogo</span>
-                <select value={jogoSel} onChange={(e) => setJogoSel(e.target.value)} className={inputCls}>
-                  <option value="">Selecione...</option>
-                  {jogos.map((j) => (
-                    <option key={j.id} value={j.id}>
-                      {(j.fase ? j.fase + " · " : "") + j.time_a + " x " + j.time_b}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block space-y-1">
-                <span className="text-xs opacity-60">Prêmio</span>
-                <select value={produtoSel} onChange={(e) => setProdutoSel(e.target.value)} className={inputCls}>
-                  <option value="">— sem prêmio —</option>
-                  {produtos.filter((p) => p.ativo).map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nome}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block space-y-1">
-                <span className="text-xs opacity-60">Qtd</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={qtd}
-                  onChange={(e) => setQtd(Number(e.target.value) || 1)}
-                  className={inputCls}
-                />
-              </label>
-              <button
-                onClick={ativarJogo}
-                disabled={savingAtivo || !jogoSel}
-                className="cta text-sm"
-              >
-                Ativar
-              </button>
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        {/* Header */}
+        <header className="flex items-center justify-between gap-4 py-5">
+          <div className="flex items-center gap-3 min-w-0">
+            {logo && (
+              <span className="painel-logo-wrap">
+                <img src={logo} alt={empresa?.nome_empresa ?? ""} />
+              </span>
+            )}
+            <div className="min-w-0">
+              <h1 className="painel-title truncate">{empresa?.nome_empresa ?? "Painel"}</h1>
+              <p className="painel-muted text-xs truncate">
+                {session.user.email} · {empresa?.slug ?? tenantId}
+              </p>
             </div>
           </div>
+          <button onClick={signOut} className="painel-btn-ghost shrink-0">Sair</button>
+        </header>
 
-          <div className="space-y-2">
-            <h3 className="text-xs opacity-70">Ativações</h3>
-            <ul className="space-y-2">
-              {ativos.map((a) => (
-                <li
-                  key={a.id}
-                  className="glass p-3 text-sm flex flex-wrap items-center gap-2"
-                >
-                  <span className="flex-1 min-w-[180px]">
-                    {a.jogos ? a.jogos.time_a + " x " + a.jogos.time_b : a.jogo_id}
-                  </span>
-                  <select
-                    value={a.status}
-                    onChange={(e) => setStatus(a.id, e.target.value)}
-                    className="glass-input text-xs"
-                    style={{ padding: "4px 8px" }}
-                  >
-                    <option value="habilitado">habilitado</option>
-                    <option value="ativo">ativo</option>
-                    <option value="encerrado">encerrado</option>
-                  </select>
+        {err && (
+          <div className="painel-alert">{err}</div>
+        )}
+
+        <div className="grid lg:grid-cols-2 gap-5 pb-10">
+          {/* Jogo do momento */}
+          <section className="painel-card">
+            <div className="painel-card-head">
+              <h2>Jogo do momento</h2>
+              <span className="painel-pill">{ativos.length} ativo(s)</span>
+            </div>
+
+            <div className="painel-card-body space-y-5">
+              <div className="space-y-3">
+                <h3 className="painel-subhead">Ativar novo jogo</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_72px_auto] gap-2.5 items-end">
+                  <label className="painel-field">
+                    <span>Jogo</span>
+                    <select value={jogoSel} onChange={(e) => setJogoSel(e.target.value)} className="painel-input">
+                      <option value="">Selecione...</option>
+                      {jogos.map((j) => (
+                        <option key={j.id} value={j.id}>
+                          {(j.fase ? (FASE_LABEL[j.fase] ?? j.fase) + " · " : "") + j.time_a + " x " + j.time_b}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="painel-field">
+                    <span>Prêmio</span>
+                    <select value={produtoSel} onChange={(e) => setProdutoSel(e.target.value)} className="painel-input">
+                      <option value="">— sem prêmio —</option>
+                      {produtos.filter((p) => p.ativo).map((p) => (
+                        <option key={p.id} value={p.id}>{p.nome}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="painel-field">
+                    <span>Qtd</span>
+                    <input
+                      type="number"
+                      min={1}
+                      value={qtd}
+                      onChange={(e) => setQtd(Number(e.target.value) || 1)}
+                      className="painel-input"
+                    />
+                  </label>
                   <button
-                    onClick={() => togglePalpites(a.id, a.palpites_encerrados)}
-                    className="glass-input text-xs"
-                    style={{ padding: "4px 8px", cursor: "pointer" }}
+                    onClick={ativarJogo}
+                    disabled={savingAtivo || !jogoSel}
+                    className="painel-btn-primary"
                   >
-                    {a.palpites_encerrados ? "Reabrir palpites" : "Encerrar palpites"}
+                    {savingAtivo ? "..." : "Ativar"}
                   </button>
-                </li>
-              ))}
-              {ativos.length === 0 && (
-                <li className="opacity-60 text-sm">Nenhum jogo ativado ainda.</li>
-              )}
-            </ul>
-          </div>
-        </section>
+                </div>
+              </div>
 
-        {/* Prêmios */}
-        <section className="glass p-5 space-y-4">
-          <h2 className="text-sm uppercase tracking-wide" style={{ color: "var(--color-brand-primary)" }}>Prêmios</h2>
-          <div className="flex gap-2">
-            <input
-              value={novoProduto}
-              onChange={(e) => setNovoProduto(e.target.value)}
-              placeholder="Novo prêmio (ex.: Camisa oficial)"
-              className={inputCls}
-            />
-            <button
-              onClick={criarProduto}
-              disabled={savingProduto || !novoProduto.trim()}
-              className="cta text-sm whitespace-nowrap"
-            >
-              Criar
-            </button>
-          </div>
-          <ul className="space-y-2">
-            {produtos.map((p) => (
-              <li
-                key={p.id}
-                className="glass p-3 text-sm flex items-center gap-2"
-              >
-                <span className="flex-1">{p.nome}</span>
-                <span
-                  className="inline-block rounded-full px-2 py-0.5 text-xs"
-                  style={{
-                    background: p.ativo
-                      ? "color-mix(in srgb, var(--color-brand-primary) 25%, transparent)"
-                      : "color-mix(in srgb, #000 35%, transparent)",
-                    color: p.ativo ? "var(--color-brand-primary)" : "var(--color-brand-text)",
-                  }}
-                >
-                  {p.ativo ? "ativo" : "inativo"}
-                </span>
+              <div className="space-y-2">
+                <h3 className="painel-subhead">Ativações</h3>
+                <ul className="space-y-2">
+                  {ativos.map((a) => (
+                    <li key={a.id} className="painel-row">
+                      <span className="flex-1 min-w-[160px] font-medium painel-ink">
+                        {a.jogos ? a.jogos.time_a + " x " + a.jogos.time_b : a.jogo_id}
+                      </span>
+                      <select
+                        value={a.status}
+                        onChange={(e) => setStatus(a.id, e.target.value)}
+                        className="painel-input painel-input-sm"
+                      >
+                        <option value="habilitado">habilitado</option>
+                        <option value="ativo">ativo</option>
+                        <option value="encerrado">encerrado</option>
+                      </select>
+                      <button
+                        onClick={() => togglePalpites(a.id, a.palpites_encerrados)}
+                        className="painel-btn-soft"
+                      >
+                        {a.palpites_encerrados ? "Reabrir palpites" : "Encerrar palpites"}
+                      </button>
+                    </li>
+                  ))}
+                  {ativos.length === 0 && (
+                    <li className="painel-empty">Nenhum jogo ativado ainda.</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          {/* Prêmios */}
+          <section className="painel-card">
+            <div className="painel-card-head">
+              <h2>Prêmios</h2>
+              <span className="painel-pill">{produtos.filter((p) => p.ativo).length} ativo(s)</span>
+            </div>
+            <div className="painel-card-body space-y-4">
+              <div className="flex gap-2">
+                <input
+                  value={novoProduto}
+                  onChange={(e) => setNovoProduto(e.target.value)}
+                  placeholder="Novo prêmio (ex.: Camisa oficial)"
+                  className="painel-input flex-1"
+                />
                 <button
-                  onClick={() => toggleProduto(p)}
-                  className="glass-input text-xs"
-                  style={{ padding: "4px 8px", cursor: "pointer" }}
+                  onClick={criarProduto}
+                  disabled={savingProduto || !novoProduto.trim()}
+                  className="painel-btn-primary whitespace-nowrap"
                 >
-                  {p.ativo ? "Desativar" : "Ativar"}
+                  {savingProduto ? "..." : "Criar"}
                 </button>
-              </li>
-            ))}
-            {produtos.length === 0 && <li className="opacity-60 text-sm">Sem prêmios cadastrados.</li>}
-          </ul>
-        </section>
-
-        {/* Participantes */}
-        <section className="glass p-5 space-y-3 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm uppercase tracking-wide" style={{ color: "var(--color-brand-primary)" }}>Participantes</h2>
-            <span className="text-xs opacity-70">{clientes.length} total</span>
-          </div>
-          <div className="overflow-auto rounded-lg">
-            <table className="w-full text-sm">
-              <thead className="opacity-80" style={{ background: "color-mix(in srgb, #000 25%, transparent)" }}>
-                <tr>
-                  <th className="text-left p-3">Nome</th>
-                  <th className="text-left p-3">Telefone</th>
-                  <th className="text-left p-3">Entrou em</th>
-                </tr>
-              </thead>
-              <tbody>
-                {clientes.map((c) => (
-                  <tr key={c.id} className="border-t" style={{ borderColor: "var(--glass-border)" }}>
-                    <td className="p-3">{c.nome ?? "—"}</td>
-                    <td className="p-3 opacity-90">{c.telefone ?? "—"}</td>
-                    <td className="p-3 opacity-70">
-                      {new Date(c.created_at).toLocaleString()}
-                    </td>
-                  </tr>
+              </div>
+              <ul className="space-y-2">
+                {produtos.map((p) => (
+                  <li key={p.id} className="painel-row">
+                    <span className="flex-1 font-medium painel-ink">{p.nome}</span>
+                    <span className={p.ativo ? "painel-badge-on" : "painel-badge-off"}>
+                      {p.ativo ? "ativo" : "inativo"}
+                    </span>
+                    <button onClick={() => toggleProduto(p)} className="painel-btn-soft">
+                      {p.ativo ? "Desativar" : "Ativar"}
+                    </button>
+                  </li>
                 ))}
-                {clientes.length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="p-6 text-center opacity-60">
-                      Nenhum participante ainda.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
+                {produtos.length === 0 && <li className="painel-empty">Sem prêmios cadastrados.</li>}
+              </ul>
+            </div>
+          </section>
+
+          {/* Participantes */}
+          <section className="painel-card lg:col-span-2">
+            <div className="painel-card-head">
+              <h2>Participantes</h2>
+              <span className="painel-pill">{clientes.length} total</span>
+            </div>
+            <div className="painel-card-body">
+              <div className="overflow-auto rounded-xl border painel-tablewrap">
+                <table className="w-full text-sm">
+                  <thead className="painel-thead">
+                    <tr>
+                      <th className="text-left p-3 font-semibold">Nome</th>
+                      <th className="text-left p-3 font-semibold">Telefone</th>
+                      <th className="text-left p-3 font-semibold">Entrou em</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clientes.map((c) => (
+                      <tr key={c.id} className="painel-trow">
+                        <td className="p-3 painel-ink">{c.nome ?? "—"}</td>
+                        <td className="p-3 painel-muted">{c.telefone ?? "—"}</td>
+                        <td className="p-3 painel-muted">
+                          {new Date(c.created_at).toLocaleString("pt-BR")}
+                        </td>
+                      </tr>
+                    ))}
+                    {clientes.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="p-6 text-center painel-muted">
+                          Nenhum participante ainda.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
     </main>
   );
