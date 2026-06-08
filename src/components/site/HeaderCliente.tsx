@@ -19,7 +19,7 @@ import { useTenant } from "@/store/tenant";
 
 const navItens = [
   { to: "/", label: "Início" },
-  { to: "/meus-palpites", label: "Meus palpites" },
+  { to: "/jogar", label: "Palpitar e meus palpites" },
 ] as const;
 
 export function HeaderCliente() {
@@ -64,10 +64,15 @@ export function HeaderCliente() {
           </SheetTrigger>
           <SheetContent
             side="right"
-            className="bg-cl-verde-escuro text-white border-none w-[78%]"
+            className="border-none w-[78%]"
+            style={{
+              background:
+                "linear-gradient(160deg, color-mix(in srgb, var(--color-brand-bg, #0A2417) 85%, var(--color-brand-secondary, #123A28)), var(--color-brand-bg, #0A2417))",
+              color: "var(--color-brand-text, #fff)",
+            }}
           >
             <SheetHeader>
-              <SheetTitle className="text-white font-display text-2xl">
+              <SheetTitle className="font-display text-2xl" style={{ color: "var(--color-brand-text, #fff)" }}>
                 {nome}
               </SheetTitle>
             </SheetHeader>
@@ -77,14 +82,14 @@ export function HeaderCliente() {
                   key={item.to}
                   to={item.to}
                   onClick={() => setOpen(false)}
-                  className="py-3.5 px-3 rounded-lg text-base min-h-11 flex items-center hover:bg-white/10 transition-colors"
-                  activeProps={{ className: "bg-white/15 font-semibold" }}
+                  className="py-3.5 px-3 rounded-lg text-base min-h-11 flex items-center transition-colors hover:bg-[color-mix(in_srgb,var(--color-brand-text)_12%,transparent)]"
+                  activeProps={{ className: "bg-[color-mix(in_srgb,var(--color-brand-text)_18%,transparent)] font-semibold" }}
                 >
                   {item.label}
                 </Link>
               ))}
             </nav>
-            <p className="absolute bottom-6 left-6 right-6 text-xs text-white/70">
+            <p className="absolute bottom-6 left-6 right-6 text-xs" style={{ color: "color-mix(in srgb, var(--color-brand-text) 70%, transparent)" }}>
               {nome} • Copa do Mundo FIFA 2026
             </p>
           </SheetContent>
