@@ -35,8 +35,7 @@ export function CardJogoAberto({ jogo }: { jogo: Jogo }) {
 
   return (
     <Link
-      to="/palpitar/$jogoId"
-      params={{ jogoId: jogo.id }}
+      to="/jogar"
       className="block card-press"
     >
       <article
