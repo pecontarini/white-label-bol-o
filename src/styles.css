@@ -508,3 +508,207 @@ html {
 /* As telas internas que não usam .app-bg ainda precisam de um fundo escuro
    para o texto claro/inputs escuros ficarem legíveis. Aplicamos via os
    containers <main> de /admin, /painel, /login (que usam min-h-screen sem bg). */
+
+/* =====================================================================
+   PAINEL DO LOJISTA — visual claro/clean com identidade de marca.
+   Fundo claro fixo (legibilidade de dashboard) + acentos na cor da
+   empresa (--color-brand-primary). Independe do tema claro/escuro do
+   app participante: o painel é sempre uma área administrativa clara.
+   ===================================================================== */
+
+.painel-bg {
+  background:
+    radial-gradient(140% 80% at 100% 0%,
+      color-mix(in srgb, var(--color-brand-primary, #123A28) 8%, #f3f4f6) 0%,
+      #f3f4f6 60%);
+  color: #1f2937;
+  font-family: var(--brand-font, "Inter", system-ui, sans-serif);
+}
+
+/* Faixa fina na cor da marca no topo */
+.painel-brandbar {
+  height: 4px;
+  width: 100%;
+  background: linear-gradient(90deg,
+    var(--color-brand-primary, #123A28),
+    color-mix(in srgb, var(--color-brand-primary, #123A28) 55%, var(--color-brand-secondary, #E9B21E)));
+}
+
+.painel-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.15;
+}
+.painel-ink { color: #1f2937; }
+.painel-muted { color: #6b7280; }
+
+.painel-logo-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  width: 44px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-brand-primary, #123A28) 12%, white);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.painel-logo-wrap img { height: 100%; width: 100%; object-fit: contain; padding: 4px; }
+
+/* Cards */
+.painel-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 8px 24px -12px rgba(16,24,40,0.12);
+  overflow: hidden;
+}
+.painel-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f3f5;
+  background: color-mix(in srgb, var(--color-brand-primary, #123A28) 4%, white);
+}
+.painel-card-head h2 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-brand-primary, #123A28);
+}
+.painel-card-body { padding: 18px; }
+
+.painel-subhead {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Pílula de contagem */
+.painel-pill {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-brand-primary, #123A28);
+  background: color-mix(in srgb, var(--color-brand-primary, #123A28) 12%, white);
+  border-radius: 9999px;
+  padding: 3px 10px;
+}
+
+/* Campos */
+.painel-field { display: block; }
+.painel-field > span {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+.painel-input {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 9px 11px;
+  font-size: 14px;
+  color: #111827;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.painel-input:focus {
+  border-color: var(--color-brand-primary, #123A28);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary, #123A28) 18%, transparent);
+}
+.painel-input-sm { width: auto; padding: 6px 9px; font-size: 12.5px; }
+
+/* Botões */
+.painel-btn-primary {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 40px; padding: 0 18px;
+  border: none; border-radius: 10px; cursor: pointer;
+  font-size: 14px; font-weight: 700;
+  color: #fff;
+  background: var(--color-brand-primary, #123A28);
+  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--color-brand-primary, #123A28) 55%, transparent);
+  transition: filter .15s, transform .05s;
+}
+.painel-btn-primary:hover { filter: brightness(1.06); }
+.painel-btn-primary:active { transform: translateY(1px); }
+.painel-btn-primary:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+.painel-btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 38px; padding: 0 14px;
+  border-radius: 10px; cursor: pointer;
+  font-size: 13px; font-weight: 600;
+  color: var(--color-brand-primary, #123A28);
+  background: color-mix(in srgb, var(--color-brand-primary, #123A28) 8%, white);
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary, #123A28) 20%, transparent);
+  transition: background .15s;
+}
+.painel-btn-ghost:hover { background: color-mix(in srgb, var(--color-brand-primary, #123A28) 14%, white); }
+
+.painel-btn-soft {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 32px; padding: 0 12px;
+  border-radius: 8px; cursor: pointer;
+  font-size: 12.5px; font-weight: 600;
+  color: #374151;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  transition: background .15s;
+  white-space: nowrap;
+}
+.painel-btn-soft:hover { background: #e5e7eb; }
+
+/* Linhas de lista */
+.painel-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border: 1px solid #eef0f2;
+  border-radius: 12px;
+  font-size: 14px;
+}
+.painel-empty {
+  padding: 14px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+  background: #f9fafb;
+  border: 1px dashed #e5e7eb;
+  border-radius: 12px;
+}
+
+/* Badges de status do prêmio */
+.painel-badge-on {
+  font-size: 11px; font-weight: 700;
+  padding: 3px 9px; border-radius: 9999px;
+  color: #15803d; background: #dcfce7;
+}
+.painel-badge-off {
+  font-size: 11px; font-weight: 700;
+  padding: 3px 9px; border-radius: 9999px;
+  color: #6b7280; background: #f3f4f6;
+}
+
+/* Tabela de participantes */
+.painel-tablewrap { border-color: #e5e7eb; }
+.painel-thead { background: #f9fafb; color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.painel-trow { border-top: 1px solid #f1f3f5; }
+.painel-trow:hover { background: #fafbfc; }
+
+/* Alerta de erro */
+.painel-alert {
+  margin: 4px 0 16px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #b42318;
+  background: #fef3f2;
+  border: 1px solid #fecdca;
+}
