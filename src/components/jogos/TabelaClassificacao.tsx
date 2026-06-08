@@ -18,7 +18,7 @@ type Props = {
 export function TabelaClassificacao({ grupoLabel, linhas, className = "" }: Props) {
   return (
     <div className={`rounded-3xl overflow-hidden glass-data ${className}`}>
-      <div className="px-4 py-2 bg-cl-verde-escuro/95 flex items-center gap-2">
+      <div className="px-4 py-2 bg-cl-verde flex items-center gap-2">
         <span
           className="inline-block size-1.5 rounded-full bg-cl-laranja"
           aria-hidden
@@ -29,7 +29,7 @@ export function TabelaClassificacao({ grupoLabel, linhas, className = "" }: Prop
       </div>
       <table className="w-full text-[13px] num">
         <thead>
-          <tr className="bg-white/60 text-cl-cinza-texto text-[10px] uppercase tracking-wider border-b border-border">
+          <tr className="bg-[color-mix(in_srgb,var(--color-brand-text)_8%,transparent)] text-cl-cinza-texto text-[10px] uppercase tracking-wider border-b border-border">
             <th className="px-2 h-7 text-left font-medium w-6">#</th>
             <th className="px-1 h-7 text-left font-medium">Seleção</th>
             <th className="px-1.5 h-7 text-center font-medium w-7">J</th>
@@ -49,7 +49,7 @@ export function TabelaClassificacao({ grupoLabel, linhas, className = "" }: Prop
             return (
               <tr
                 key={l.selecao}
-                className={`${zebra ? "bg-white/40" : "bg-transparent"} border-t border-border/50 h-10 ${
+                className={`${zebra ? "bg-[color-mix(in_srgb,var(--color-brand-text)_6%,transparent)]" : "bg-transparent"} border-t border-border/50 h-10 ${
                   classificado ? "border-l-2 border-l-cl-verde" : ""
                 }`}
               >
