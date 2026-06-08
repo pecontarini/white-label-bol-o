@@ -1,8 +1,16 @@
 import { useState } from "react";
 
+/* ===================================================================
+   Bandeira — Palpite na Mesa (portado do Caju).
+   Agora recebe a sigla flagcdn (`cc`, ex.: "br", "gb-eng") direto das
+   nossas RPCs, em vez de mapear código FIFA. Renderiza a imagem real
+   da bandeira (flagcdn) e cai pro emoji quando a imagem falha ou não
+   há sigla.
+   =================================================================== */
+
 type Props = {
-  cc?: string | null;
-  emoji?: string | null;
+  cc?: string | null;        // sigla flagcdn (ex.: "br", "gb-eng")
+  emoji?: string | null;     // fallback emoji vindo da RPC (ex.: "🇧🇷")
   alt?: string;
   tamanho?: number;
   className?: string;

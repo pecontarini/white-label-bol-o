@@ -1,6 +1,14 @@
 import { Bandeira } from "./Bandeira";
 import type { LinhaClassificacao } from "@/lib/jogos";
 
+/* ===================================================================
+   TabelaClassificacao — Palpite na Mesa (portado do Caju).
+   Visual idêntico; consome o formato da RPC app_classificacao
+   (selecao, cc, bandeira, j/v/e/d/sg/pts). Sem destaque fixo de
+   "Brasil" (era específico do Caju) — os 2 primeiros do grupo
+   ficam marcados como classificados.
+   =================================================================== */
+
 type Props = {
   grupoLabel: string;
   linhas: LinhaClassificacao[];
@@ -9,23 +17,29 @@ type Props = {
 
 export function TabelaClassificacao({ grupoLabel, linhas, className = "" }: Props) {
   return (
-    <div className={`glass-data rounded-2xl overflow-hidden ${className}`}>
-      <div className="px-3 py-2 border-b border-black/5">
-        <span className="text-xs font-semibold uppercase tracking-wide text-[var(--cl-verde-escuro)]">
+    <div className={`rounded-3xl overflow-hidden glass-data ${className}`}>
+      <div className="px-4 py-2 bg-cl-verde-escuro/95 flex items-center gap-2">
+        <span
+          className="inline-block size-1.5 rounded-full bg-cl-laranja"
+          aria-hidden
+        />
+        <p className="text-white text-[12px] font-semibold uppercase tracking-wider">
           {grupoLabel}
-        </span>
+        </p>
       </div>
-      <table className="w-full text-sm">
+      <table className="w-full text-[13px] num">
         <thead>
-          <tr className="text-[11px] uppercase text-[var(--cl-cinza-texto)]">
-            <th className="py-2 px-2 text-left">#</th>
-            <th className="py-2 px-2 text-left">Seleção</th>
-            <th className="py-2 px-1 text-center">J</th>
-            <th className="py-2 px-1 text-center">V</th>
-            <th className="py-2 px-1 text-center">E</th>
-            <th className="py-2 px-1 text-center">D</th>
-            <th className="py-2 px-1 text-center">SG</th>
-            <th className="py-2 px-2 text-center">Pts</th>
+          <tr className="bg-white/60 text-cl-cinza-texto text-[10px] uppercase tracking-wider border-b border-border">
+            <th className="px-2 h-7 text-left font-medium w-6">#</th>
+            <th className="px-1 h-7 text-left font-medium">Seleção</th>
+            <th className="px-1.5 h-7 text-center font-medium w-7">J</th>
+            <th className="px-1.5 h-7 text-center font-medium w-7">V</th>
+            <th className="px-1.5 h-7 text-center font-medium w-7">E</th>
+            <th className="px-1.5 h-7 text-center font-medium w-7">D</th>
+            <th className="px-1.5 h-7 text-center font-medium w-8">SG</th>
+            <th className="px-2 h-7 text-center font-semibold w-9 text-cl-verde-escuro">
+              Pts
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -34,26 +48,26 @@ export function TabelaClassificacao({ grupoLabel, linhas, className = "" }: Prop
             const zebra = i % 2 === 1;
             return (
               <tr
-                key={`${l.selecao}-${i}`}
-                className={`${zebra ? "bg-black/[0.02]" : ""} ${
-                  classificado ? "font-semibold" : ""
+                key={l.selecao}
+                className={`${zebra ? "bg-white/40" : "bg-transparent"} border-t border-border/50 h-10 ${
+                  classificado ? "border-l-2 border-l-cl-verde" : ""
                 }`}
               >
-                <td className="py-2 px-2 num text-[var(--cl-cinza-texto)]">{i + 1}</td>
-                <td className="py-2 px-2">
+                <td className="px-2 text-cl-cinza-texto font-medium">{i + 1}</td>
+                <td className="px-1">
                   <div className="flex items-center gap-2 min-w-0">
                     <Bandeira cc={l.cc} emoji={l.bandeira} alt={l.selecao} tamanho={18} />
-                    <span className="truncate text-[var(--cl-verde-escuro)]">{l.selecao}</span>
+                    <span className="truncate text-cl-verde-escuro">{l.selecao}</span>
                   </div>
                 </td>
-                <td className="py-2 px-1 text-center num">{l.j}</td>
-                <td className="py-2 px-1 text-center num">{l.v}</td>
-                <td className="py-2 px-1 text-center num">{l.e}</td>
-                <td className="py-2 px-1 text-center num">{l.d}</td>
-                <td className="py-2 px-1 text-center num">
+                <td className="px-1.5 text-center text-cl-cinza-texto">{l.j}</td>
+                <td className="px-1.5 text-center text-cl-cinza-texto">{l.v}</td>
+                <td className="px-1.5 text-center text-cl-cinza-texto">{l.e}</td>
+                <td className="px-1.5 text-center text-cl-cinza-texto">{l.d}</td>
+                <td className="px-1.5 text-center text-cl-cinza-texto">
                   {l.sg > 0 ? `+${l.sg}` : l.sg}
                 </td>
-                <td className="py-2 px-2 text-center num font-semibold text-[var(--cl-verde-escuro)]">
+                <td className="px-2 text-center font-bold text-cl-verde-escuro">
                   {l.pts}
                 </td>
               </tr>
@@ -61,7 +75,7 @@ export function TabelaClassificacao({ grupoLabel, linhas, className = "" }: Prop
           })}
           {linhas.length === 0 && (
             <tr>
-              <td colSpan={8} className="py-4 text-center text-[var(--cl-cinza-texto)]">
+              <td colSpan={8} className="px-3 py-4 text-center text-xs text-cl-cinza-texto">
                 Sem dados.
               </td>
             </tr>
@@ -74,8 +88,8 @@ export function TabelaClassificacao({ grupoLabel, linhas, className = "" }: Prop
 
 export function HeaderClassificacao({ titulo = "Classificação" }: { titulo?: string }) {
   return (
-    <div className="px-1">
-      <h2 className="secao-titulo">{titulo}</h2>
+    <div className="flex items-center gap-2 mb-3">
+      <p className="secao-titulo">{titulo}</p>
     </div>
   );
 }

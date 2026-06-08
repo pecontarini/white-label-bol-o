@@ -1,6 +1,14 @@
+import { Link } from "@tanstack/react-router";
 import { type Jogo } from "@/lib/jogos";
 import { Bandeira } from "./Bandeira";
 import { ChevronRight } from "lucide-react";
+
+/* ===================================================================
+   CardJogoAberto — Palpite na Mesa (portado do Caju).
+   Visual idêntico ao Caju; consome o tipo `Jogo` do nosso backend
+   (cc_a/cc_b para a bandeira, status "ao_vivo"/"encerrado"/"agendado").
+   Sem lógica de "envolve Brasil" (era específico do Caju).
+   =================================================================== */
 
 function horaBR(iso: string) {
   return new Date(iso).toLocaleTimeString("pt-BR", {
@@ -21,46 +29,52 @@ function diaBR(iso: string) {
 }
 
 export function CardJogoAberto({ jogo }: { jogo: Jogo }) {
+  const temPlacar = jogo.placar_a !== null && jogo.placar_b !== null;
   const aoVivo = jogo.status === "ao_vivo";
   const encerrado = jogo.status === "encerrado";
 
   return (
-    <button
-      type="button"
-      className="glass-data card-press w-full text-left rounded-2xl p-3"
+    <Link
+      to="/palpitar/$jogoId"
+      params={{ jogoId: jogo.id }}
+      className="block card-press"
     >
-      <div className="grid grid-cols-[64px_1fr_auto] gap-3 items-center">
+      <article
+        className={`glass rounded-3xl overflow-hidden grid grid-cols-[56px_1fr_auto] items-stretch transition-shadow hover:shadow-[0_8px_28px_rgba(28,59,22,0.10)] ${
+          aoVivo ? "ring-1 ring-cl-laranja/40" : ""
+        }`}
+      >
         {/* Coluna 1: hora/data */}
-        <div className="flex flex-col items-center justify-center text-center">
-          <span className="text-[11px] uppercase tracking-wide text-[var(--cl-cinza-texto)]">
+        <div className="flex flex-col items-center justify-center border-r border-border/60 py-2.5 px-1 text-cl-cinza-texto">
+          <span className="text-[10px] uppercase tracking-wider">
             {diaBR(jogo.data_hora_inicio)}
           </span>
-          <span className="num text-sm font-semibold text-[var(--cl-verde-escuro)]">
+          <span className="text-[15px] font-semibold num text-cl-verde-escuro mt-0.5">
             {horaBR(jogo.data_hora_inicio)}
           </span>
         </div>
 
         {/* Coluna 2: times empilhados */}
-        <div className="flex flex-col gap-1.5 min-w-0">
+        <div className="py-2 px-3 flex flex-col gap-1.5 min-w-0">
           <LinhaTime
             nome={jogo.time_a}
             cc={jogo.cc_a}
             emoji={jogo.bandeira_a}
-            placar={jogo.placar_a}
+            placar={temPlacar ? jogo.placar_a : null}
           />
           <LinhaTime
             nome={jogo.time_b}
             cc={jogo.cc_b}
             emoji={jogo.bandeira_b}
-            placar={jogo.placar_b}
+            placar={temPlacar ? jogo.placar_b : null}
           />
         </div>
 
         {/* Coluna 3: status + seta */}
-        <div className="flex items-center gap-1">
+        <div className="flex flex-col items-end justify-center gap-1 pr-3 pl-1 py-2">
           {aoVivo ? (
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--cl-sucesso)]">
-              <span className="pulse-dot" />
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-cl-laranja">
+              <span className="pulse-dot" aria-hidden />
               Ao vivo
             </span>
           ) : encerrado ? (
@@ -68,10 +82,10 @@ export function CardJogoAberto({ jogo }: { jogo: Jogo }) {
           ) : (
             <span className="badge-palpite">Palpite</span>
           )}
-          <ChevronRight className="size-4 text-[var(--cl-cinza-texto)]" />
+          <ChevronRight className="size-4 text-cl-cinza-texto" />
         </div>
-      </div>
-    </button>
+      </article>
+    </Link>
   );
 }
 
@@ -88,12 +102,12 @@ function LinhaTime({
 }) {
   return (
     <div className="flex items-center gap-2 min-w-0">
-      <Bandeira cc={cc} emoji={emoji} alt={nome} tamanho={20} />
-      <span className="truncate text-sm font-medium text-[var(--cl-verde-escuro)]">
+      <Bandeira cc={cc} emoji={emoji} alt={nome} tamanho={18} />
+      <span className="text-[14px] truncate flex-1 font-medium text-cl-verde-escuro">
         {nome}
       </span>
       {placar !== null && (
-        <span className="ml-auto num text-sm font-semibold text-[var(--cl-verde-escuro)]">
+        <span className="text-[15px] font-semibold num text-cl-verde-escuro tabular-nums">
           {placar}
         </span>
       )}
