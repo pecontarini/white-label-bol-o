@@ -26,13 +26,13 @@ export type Jogo = {
   id: string;
   numero_jogo: number;
   fase: Fase | string | null;
-  grupo: string | null;
-  grupo_label: string | null;
+  grupo: string | null;        // ex.: "GROUP_C"
+  grupo_label: string | null;  // ex.: "Grupo C"
   rodada: number | null;
   data_hora_inicio: string;
-  time_a: string;
-  cc_a: string | null;
-  bandeira_a: string;
+  time_a: string;              // PT, ex.: "Brasil"
+  cc_a: string | null;         // sigla flagcdn, ex.: "br"
+  bandeira_a: string;          // emoji fallback
   time_b: string;
   cc_b: string | null;
   bandeira_b: string;
