@@ -155,7 +155,7 @@ function PainelPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
+      <main className="app-bg min-h-screen flex items-center justify-center">
         Carregando...
       </main>
     );
@@ -165,7 +165,7 @@ function PainelPage() {
 
   if (role !== "tenant_admin") {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
+      <main className="app-bg min-h-screen flex flex-col items-center justify-center gap-4 p-6">
         <p>Acesso restrito.</p>
         <button onClick={signOut} className="cta text-sm">Sair</button>
       </main>
@@ -173,7 +173,7 @@ function PainelPage() {
   }
 
   return (
-    <main className="min-h-screen">
+    <main className="app-bg min-h-screen">
       <header className="px-6 py-4 flex items-center justify-between border-b" style={{ borderColor: "var(--glass-border)" }}>
         <div>
           <h1 className="text-lg font-semibold">{empresa?.nome_empresa ?? "Painel"}</h1>

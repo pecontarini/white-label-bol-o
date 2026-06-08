@@ -1,544 +1,735 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Link } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
-import { format } from "date-fns";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { format, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { toast } from "sonner";
-import { useTenant } from "@/store/tenant";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  ChevronRight,
+  Info,
+  Trophy,
+  Users,
+  MapPin,
+  Globe2,
+  Ticket,
+  CalendarDays,
+} from "lucide-react";
+import { LayoutCliente } from "@/components/site/LayoutCliente";
+import { CardJogoAberto } from "@/components/jogos/CardJogoAberto";
+import {
+  TabelaClassificacao,
+  HeaderClassificacao,
+} from "@/components/jogos/TabelaClassificacao";
+import { Bandeira } from "@/components/jogos/Bandeira";
+import {
+  buscarPartidas,
+  buscarProximoJogo,
+  buscarClassificacao,
+  type Jogo,
+  type LinhaClassificacao,
+  type ProximoJogo,
+} from "@/lib/jogos";
 
-type Jogo = {
-  tenant_jogo_id: string;
-  jogo_id: string;
-  time_a: string;
-  time_b: string;
-  inicio: string;
-  fase: string | null;
-  grupo: string | null;
-  status: string;
-  palpites_encerrados: boolean;
-  premio_nome: string | null;
-  premio_quantidade: number | null;
-};
+/* ===================================================================
+   Home — Palpite na Mesa (vitrine portada do Caju, 4 abas).
+   Visual idêntico ao Caju; dados via nossas RPCs (app_partidas,
+   app_proximo_jogo, app_classificacao). Sem cardápio/unidades/
+   "envolve Brasil" (eram do Caju). Os CTAs levam ao fluxo de
+   palpite em /jogar.
+   =================================================================== */
 
-type RankingRow = { nome: string; acertos: number; palpites: number };
-type Identidade = { nome: string; telefone: string };
-type MeuPalpite = {
-  time_a: string;
-  time_b: string;
-  inicio: string;
-  status: string;
-  palpite_a: number;
-  palpite_b: number;
-  placar_a: number | null;
-  placar_b: number | null;
-  acertou: boolean | null;
-};
-type Premio = { id: string; nome: string };
-type Aba = "jogos" | "meus" | "ranking" | "premios";
+const COPA_INICIO = new Date("2026-06-11T00:00:00-03:00");
+const COPA_FIM = new Date("2026-07-19T23:59:59-03:00");
 
-const DEFAULT_REGULAMENTO =
-  "Dê o placar exato do jogo do momento para pontuar. A cada jogo encerrado, " +
-  "quem cravar o placar exato ganha o prêmio definido pelo estabelecimento. " +
-  "Um palpite por jogo; pode editar enquanto os palpites estiverem abertos.";
+type Aba = "visao" | "partidas" | "classificacao" | "eliminatoria";
+const ABAS: { id: Aba; label: string }[] = [
+  { id: "visao", label: "Visão geral" },
+  { id: "partidas", label: "Partidas" },
+  { id: "classificacao", label: "Classificação" },
+  { id: "eliminatoria", label: "Fase eliminatória" },
+];
 
-function ParticipantFlow({
-  slug,
-  nome,
-  logoUrl,
-  regulamento,
-}: {
-  slug: string;
-  nome: string;
-  logoUrl?: string;
-  regulamento?: string;
-}) {
-  const storageKey = `pnm:participant:${slug}`;
-  const [ident, setIdent] = useState<Identidade | null>(null);
-  const [formNome, setFormNome] = useState("");
-  const [formTel, setFormTel] = useState("");
+type Search = { aba: Aba };
 
-  const [aba, setAba] = useState<Aba>("jogos");
-  const [mostrarComo, setMostrarComo] = useState(false);
+export const Route = createFileRoute("/")({
+  validateSearch: (s: Record<string, unknown>): Search => {
+    const aba = s.aba as Aba | undefined;
+    return {
+      aba:
+        aba === "partidas" || aba === "classificacao" || aba === "eliminatoria"
+          ? aba
+          : "visao",
+    };
+  },
+  component: Home,
+});
 
-  const [jogo, setJogo] = useState<Jogo | null>(null);
-  const [loadingJogo, setLoadingJogo] = useState(true);
-  const [palpiteA, setPalpiteA] = useState("");
-  const [palpiteB, setPalpiteB] = useState("");
-  const [enviando, setEnviando] = useState(false);
-
-  const [ranking, setRanking] = useState<RankingRow[]>([]);
-  const [meus, setMeus] = useState<MeuPalpite[]>([]);
-  const [premios, setPremios] = useState<Premio[]>([]);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) setIdent(JSON.parse(raw));
-    } catch {}
-  }, [storageKey]);
-
-  const carregarJogo = useCallback(async () => {
-    setLoadingJogo(true);
-    const { data } = await supabase.rpc("app_jogo_ativo", { p_slug: slug });
-    setJogo((data as Jogo[] | null)?.[0] ?? null);
-    setLoadingJogo(false);
-  }, [slug]);
-
-  const carregarRanking = useCallback(async () => {
-    const { data } = await supabase.rpc("app_ranking", { p_slug: slug });
-    setRanking((data as RankingRow[] | null) ?? []);
-  }, [slug]);
-
-  const carregarMeus = useCallback(async () => {
-    if (!ident) {
-      setMeus([]);
-      return;
-    }
-    const { data } = await supabase.rpc("app_meus_palpites", {
-      p_slug: slug,
-      p_telefone: ident.telefone,
-    });
-    setMeus((data as MeuPalpite[] | null) ?? []);
-  }, [slug, ident]);
-
-  const carregarPremios = useCallback(async () => {
-    const { data } = await supabase.rpc("app_premios", { p_slug: slug });
-    setPremios((data as Premio[] | null) ?? []);
-  }, [slug]);
-
-  useEffect(() => {
-    carregarJogo();
-    carregarRanking();
-  }, [carregarJogo, carregarRanking]);
-
-  useEffect(() => {
-    if (aba === "meus") carregarMeus();
-    else if (aba === "premios") carregarPremios();
-    else if (aba === "ranking") carregarRanking();
-    else if (aba === "jogos") carregarJogo();
-  }, [aba, carregarMeus, carregarPremios, carregarRanking, carregarJogo]);
-
-  const salvarIdent = (e: React.FormEvent) => {
-    e.preventDefault();
-    const n = formNome.trim();
-    const telefone = formTel.trim();
-    if (!n || !telefone) return;
-    const novo = { nome: n, telefone };
-    localStorage.setItem(storageKey, JSON.stringify(novo));
-    setIdent(novo);
-  };
-
-  const trocar = () => {
-    localStorage.removeItem(storageKey);
-    setIdent(null);
-    setMeus([]);
-    setFormNome("");
-    setFormTel("");
-  };
-
-  const enviarPalpite = async () => {
-    if (!ident || !jogo) return;
-    if (palpiteA === "" || palpiteB === "") {
-      toast.error("Preencha os dois placares.");
-      return;
-    }
-    setEnviando(true);
-    const { error } = await supabase.rpc("app_registrar_palpite", {
-      p_slug: slug,
-      p_nome: ident.nome,
-      p_telefone: ident.telefone,
-      p_palpite_a: Number(palpiteA),
-      p_palpite_b: Number(palpiteB),
-    });
-    setEnviando(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Palpite registrado!");
-    setPalpiteA("");
-    setPalpiteB("");
-    carregarMeus();
-    carregarRanking();
-  };
-
-  const encerrado = !!jogo?.palpites_encerrados;
-  const regTexto = regulamento && regulamento.trim() ? regulamento : DEFAULT_REGULAMENTO;
-
-  const identCard = !ident ? (
-    <form onSubmit={salvarIdent} className="glass p-6 flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">Entrar no bolão</h2>
-      <input
-        className="glass-input"
-        placeholder="Seu nome"
-        value={formNome}
-        onChange={(e) => setFormNome(e.target.value)}
-        required
-      />
-      <input
-        className="glass-input"
-        placeholder="Telefone"
-        value={formTel}
-        onChange={(e) => setFormTel(e.target.value)}
-        required
-      />
-      <button type="submit" className="cta">Continuar</button>
-    </form>
-  ) : (
-    <div className="glass p-4 flex items-center justify-between">
-      <span className="text-sm opacity-85">
-        Jogando como <strong>{ident.nome}</strong>
-      </span>
-      <button
-        type="button"
-        onClick={trocar}
-        className="text-xs underline opacity-70 hover:opacity-100"
-      >
-        trocar
-      </button>
-    </div>
-  );
-
-  const abas: [Aba, string][] = [
-    ["jogos", "Jogos"],
-    ["meus", "Meus palpites"],
-    ["ranking", "Ranking"],
-    ["premios", "Prêmios"],
-  ];
+function Home() {
+  const { aba } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const setAba = (a: Aba) => navigate({ search: { aba: a }, replace: true });
 
   return (
-    <div className="mx-auto max-w-xl w-full flex flex-col gap-5 p-4 pb-28">
-      <header className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          {logoUrl ? (
-            <img src={logoUrl} alt={nome} className="max-h-10" />
-          ) : (
-            <h1 className="text-lg font-semibold truncate">{nome}</h1>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setMostrarComo((v) => !v)}
-          aria-label="Como funciona"
-          title="Como funciona"
-          className="btn btn-sm btn-ghost"
-        >
-          ?
-        </button>
-      </header>
+    <LayoutCliente>
+      <TabBar ativa={aba} onChange={setAba} />
+      <div className="mt-3">
+        {aba === "visao" && <AbaVisaoGeral />}
+        {aba === "partidas" && <AbaPartidas />}
+        {aba === "classificacao" && <AbaClassificacao />}
+        {aba === "eliminatoria" && <AbaEliminatoria />}
+      </div>
+    </LayoutCliente>
+  );
+}
 
-      {mostrarComo ? (
-        <section className="glass p-5">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold" style={{ color: "var(--color-brand-primary)" }}>
-              Como funciona
-            </h2>
-            <button
-              type="button"
-              onClick={() => setMostrarComo(false)}
-              className="text-xs opacity-70 hover:opacity-100"
-            >
-              fechar
-            </button>
-          </div>
-          <p className="text-sm whitespace-pre-line opacity-90">{regTexto}</p>
-        </section>
-      ) : null}
-
-      {identCard}
-
-      {aba === "jogos" && (
-        <section className="glass p-6">
-          <h2 className="text-lg font-semibold mb-3">Jogo do momento</h2>
-          {loadingJogo ? (
-            <p className="opacity-70 text-sm">Carregando…</p>
-          ) : !jogo ? (
-            <p className="opacity-80">Nenhum jogo ativo no momento.</p>
-          ) : (
-            <div className="flex flex-col gap-4">
-              <div className="text-center">
-                <div className="text-xl font-semibold">
-                  {jogo.time_a} <span className="opacity-60">x</span> {jogo.time_b}
-                </div>
-                <div className="text-xs opacity-70 mt-1">
-                  {format(new Date(jogo.inicio), "d 'de' MMMM 'às' HH:mm", { locale: ptBR })}
-                  {jogo.fase ? ` · ${jogo.fase}` : ""}
-                  {jogo.grupo ? ` · Grupo ${jogo.grupo}` : ""}
-                </div>
-                {jogo.premio_nome ? (
-                  <div className="text-xs mt-2" style={{ color: "var(--color-brand-primary)" }}>
-                    Em disputa: {jogo.premio_quantidade ?? 1}x {jogo.premio_nome}
-                  </div>
-                ) : null}
-              </div>
-
-              {encerrado ? (
-                <span
-                  className="self-center text-xs rounded-full px-3 py-1"
-                  style={{
-                    background: "color-mix(in srgb, var(--color-brand-primary) 18%, transparent)",
-                    color: "var(--color-brand-primary)",
-                  }}
-                >
-                  Palpites encerrados
-                </span>
-              ) : null}
-
-              <div className="flex items-center justify-center gap-3">
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  className="glass-input w-20 text-center text-xl"
-                  value={palpiteA}
-                  onChange={(e) => setPalpiteA(e.target.value)}
-                  disabled={encerrado || !ident}
-                  aria-label={`Placar ${jogo.time_a}`}
-                />
-                <span className="opacity-60">x</span>
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  className="glass-input w-20 text-center text-xl"
-                  value={palpiteB}
-                  onChange={(e) => setPalpiteB(e.target.value)}
-                  disabled={encerrado || !ident}
-                  aria-label={`Placar ${jogo.time_b}`}
-                />
-              </div>
-
-              <button
-                type="button"
-                className="cta"
-                onClick={enviarPalpite}
-                disabled={encerrado || !ident || enviando}
-              >
-                {enviando ? "Enviando…" : "Enviar palpite"}
-              </button>
-              {!ident ? (
-                <p className="text-xs opacity-70 text-center">
-                  Entre no bolão acima para enviar seu palpite.
-                </p>
-              ) : null}
-            </div>
-          )}
-        </section>
-      )}
-
-      {aba === "meus" && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold">Meus palpites</h2>
-          {!ident ? (
-            <div className="glass p-5 text-sm opacity-85">
-              Entre no bolão acima para ver seus palpites.
-            </div>
-          ) : meus.length === 0 ? (
-            <div className="glass p-5 text-sm opacity-80">
-              Você ainda não palpitou.
-            </div>
-          ) : (
-            meus.map((m, i) => {
-              const enc = m.status === "encerrado";
-              return (
-                <div key={i} className="glass p-4 flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">
-                      {m.time_a} <span className="opacity-60">x</span> {m.time_b}
-                    </span>
-                    {enc ? (
-                      <span
-                        className="text-xs rounded-full px-2 py-0.5"
-                        style={
-                          m.acertou
-                            ? {
-                                background: "color-mix(in srgb, #22c55e 22%, transparent)",
-                                color: "#86efac",
-                              }
-                            : {
-                                background: "color-mix(in srgb, #ef4444 18%, transparent)",
-                                color: "#fca5a5",
-                              }
-                        }
-                      >
-                        {m.acertou ? "Acertou" : "Não acertou"}
-                      </span>
-                    ) : (
-                      <span
-                        className="text-xs rounded-full px-2 py-0.5 opacity-80"
-                        style={{ background: "color-mix(in srgb, #fff 8%, transparent)" }}
-                      >
-                        Aguardando
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-sm opacity-85">
-                    Meu palpite:{" "}
-                    <strong>
-                      {m.palpite_a} x {m.palpite_b}
-                    </strong>
-                  </div>
-                  {enc ? (
-                    <div className="text-sm opacity-75">
-                      Resultado: {m.placar_a ?? "—"} x {m.placar_b ?? "—"}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })
-          )}
-        </section>
-      )}
-
-      {aba === "ranking" && (
-        <section className="glass p-6">
-          <h2 className="text-lg font-semibold mb-3">Ranking</h2>
-          {ranking.length === 0 ? (
-            <p className="opacity-70 text-sm">Sem participantes ainda.</p>
-          ) : (
-            <ol className="flex flex-col">
-              {ranking.map((r, i) => {
-                const isMe = ident && r.nome === ident.nome;
-                return (
-                  <li
-                    key={`${r.nome}-${i}`}
-                    className="flex items-center justify-between py-2 px-2 rounded-md"
-                    style={{
-                      borderTop:
-                        i === 0 ? "none" : "1px solid color-mix(in srgb, #fff 6%, transparent)",
-                      background: isMe
-                        ? "color-mix(in srgb, var(--color-brand-primary) 12%, transparent)"
-                        : undefined,
-                    }}
-                  >
-                    <span className="flex items-center gap-3">
-                      <span
-                        className="text-xs w-6 text-center"
-                        style={{ color: "var(--color-brand-primary)" }}
-                      >
-                        {i + 1}º
-                      </span>
-                      <span className="font-medium">{r.nome}</span>
-                    </span>
-                    <span className="text-sm">
-                      <strong>{r.acertos}</strong> pts
-                      <span className="opacity-60 text-xs ml-2">({r.palpites})</span>
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
-          )}
-        </section>
-      )}
-
-      {aba === "premios" && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold">Prêmios</h2>
-          {jogo?.premio_nome ? (
-            <div className="glass p-4 text-sm" style={{ color: "var(--color-brand-primary)" }}>
-              Prêmio do jogo atual: {jogo.premio_quantidade ?? 1}x {jogo.premio_nome}
-            </div>
-          ) : null}
-          {premios.length === 0 ? (
-            <div className="glass p-5 text-sm opacity-80">
-              Os prêmios serão divulgados em breve.
-            </div>
-          ) : (
-            premios.map((p) => (
-              <div key={p.id} className="glass p-4">
-                <span className="font-medium">{p.nome}</span>
-              </div>
-            ))
-          )}
-        </section>
-      )}
-
-      <nav
-        className="glass fixed left-1/2 -translate-x-1/2 bottom-3 z-40 flex items-center justify-between gap-1 px-2 py-2 w-[calc(100%-1.5rem)] max-w-xl"
-        aria-label="Navegação"
-      >
-        {abas.map(([key, label]) => {
-          const active = aba === key;
+function TabBar({ ativa, onChange }: { ativa: Aba; onChange: (a: Aba) => void }) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Seções"
+      className="sticky top-[56px] z-20 -mx-4 px-4 glass-sticky"
+    >
+      <div className="flex gap-1 overflow-x-auto no-scrollbar">
+        {ABAS.map((t) => {
+          const isAtiva = t.id === ativa;
           return (
             <button
-              key={key}
+              key={t.id}
               type="button"
-              onClick={() => setAba(key)}
-              className="flex-1 text-xs py-2 rounded-md transition-colors"
-              style={{
-                color: active ? "var(--color-brand-primary)" : "var(--color-brand-text)",
-                background: active
-                  ? "color-mix(in srgb, var(--color-brand-primary) 14%, transparent)"
-                  : "transparent",
-                fontWeight: active ? 600 : 400,
-              }}
-              aria-current={active ? "page" : undefined}
+              role="tab"
+              aria-selected={isAtiva}
+              data-active={isAtiva}
+              onClick={() => onChange(t.id)}
+              className="tab-underline whitespace-nowrap"
             >
-              {label}
+              {t.label}
             </button>
           );
         })}
-      </nav>
+      </div>
     </div>
   );
 }
 
-function Home() {
-  const { tenant, status } = useTenant();
+/* ============================ VISÃO GERAL ============================ */
 
-  if (status === "ready" && tenant) {
-    const nome = tenant.nome_exibicao ?? tenant.slug;
-    return (
-      <main className="min-h-screen py-6 px-2">
-        <ParticipantFlow
-          slug={tenant.slug}
-          nome={nome}
-          logoUrl={tenant.branding?.logo_url}
-          regulamento={tenant.branding?.textos?.regulamento}
-        />
-      </main>
-    );
-  }
+function AbaVisaoGeral() {
+  const hoje = new Date();
+  const antes = hoje < COPA_INICIO;
+  const durante = hoje >= COPA_INICIO && hoje <= COPA_FIM;
+  const diasFaltam = Math.max(0, differenceInCalendarDays(COPA_INICIO, hoje));
+  const progresso = clamp(
+    (hoje.getTime() - COPA_INICIO.getTime()) /
+      (COPA_FIM.getTime() - COPA_INICIO.getTime()),
+    0,
+    1,
+  );
 
-  const nome = tenant?.nome_exibicao ?? "Palpite na Mesa";
-  const subtitulo =
-    tenant?.branding?.textos?.subtitulo ?? "Faça seu palpite e concorra a prêmios.";
+  const proximo = useQuery({
+    queryKey: ["home", "proximo-jogo"],
+    queryFn: buscarProximoJogo,
+    refetchInterval: 60_000,
+  });
 
   return (
-    <main className="flex items-center justify-center p-8 min-h-screen">
-      <section className="glass max-w-2xl w-full text-center p-12">
-        {tenant?.branding?.logo_url ? (
-          <img
-            src={tenant.branding.logo_url}
-            alt={nome}
-            className="max-h-24 mx-auto mb-6"
-          />
-        ) : (
-          <h1 className="text-4xl font-bold mb-4">{nome}</h1>
-        )}
-        <h2
-          className="text-2xl font-semibold mb-2"
-          style={{ color: "var(--color-brand-primary)" }}
-        >
+    <div className="space-y-5">
+      {/* Hero */}
+      <section
+        className="relative overflow-hidden rounded-3xl glass px-5 pt-5 pb-6 text-center"
+      >
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 opacity-[0.06] pointer-events-none"
+          style={{
+            backgroundImage: "url('/assets/16-textura-geometrica.png')",
+            backgroundSize: "260px",
+            backgroundRepeat: "repeat",
+          }}
+        />
+        <p className="font-display text-3xl font-bold text-cl-verde-escuro leading-tight">
+          Bolão da Copa
+        </p>
+        <p className="mt-1 text-[11px] text-cl-cinza-texto uppercase tracking-[0.18em]">
           Copa do Mundo FIFA 2026
-        </h2>
-        <p className="opacity-85 mb-6">{subtitulo}</p>
-        <button className="cta">Entrar no bolão</button>
-        <div className="text-xs opacity-60 mt-8">
-          {status === "neutro"
-            ? "Tema neutro (nenhuma empresa identificada)"
-            : "Tenant: " + (tenant?.slug ?? "")}
+        </p>
+      </section>
+
+      {/* Próximo jogo */}
+      <SecaoProximoJogo loading={proximo.isLoading} dados={proximo.data ?? null} />
+
+      {/* Estado da Copa */}
+      <section className="glass rounded-3xl p-5">
+        {antes && (
+          <div className="text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-cl-cinza-texto">
+              Contagem regressiva
+            </p>
+            <p className="mt-1 font-display text-cl-verde-escuro leading-none tabular-nums">
+              <span className="text-5xl font-bold">{diasFaltam}</span>
+              <span className="text-base ml-2">
+                {diasFaltam === 1 ? "dia" : "dias"}
+              </span>
+            </p>
+            <p className="mt-1 text-sm text-cl-cinza-texto">para a Copa começar</p>
+            <p className="mt-3 text-[11px] uppercase tracking-wider text-cl-cinza-texto">
+              11 jun → 19 jul 2026
+            </p>
+          </div>
+        )}
+        {durante && (
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-cl-cinza-texto text-center">
+              A Copa está rolando
+            </p>
+            <div className="mt-3 relative h-2 rounded-full bg-cl-verde/10 overflow-hidden">
+              <div
+                className="absolute inset-y-0 left-0 bg-cl-verde rounded-full transition-all"
+                style={{ width: `${progresso * 100}%` }}
+              />
+            </div>
+            <div className="mt-2 flex justify-between text-[11px] text-cl-cinza-texto num">
+              <span>11 jun</span>
+              <span>19 jul</span>
+            </div>
+          </div>
+        )}
+        {!antes && !durante && (
+          <div className="text-center">
+            <p className="font-display text-xl text-cl-verde-escuro">Copa encerrada</p>
+            <p className="text-sm text-cl-cinza-texto mt-1">
+              Obrigado por palpitar com a gente!
+            </p>
+          </div>
+        )}
+      </section>
+
+      {/* A Copa em números */}
+      <section>
+        <HeaderSecao titulo="A Copa em números" />
+        <div className="grid grid-cols-2 gap-2.5">
+          <MiniCard icon={<Users className="size-5" />} valor="48" rotulo="seleções" />
+          <MiniCard icon={<Trophy className="size-5" />} valor="104" rotulo="jogos" />
+          <MiniCard icon={<MapPin className="size-5" />} valor="16" rotulo="sedes" />
+          <MiniCard icon={<Globe2 className="size-5" />} valor="3" rotulo="países" />
         </div>
-        <div className="mt-4 text-xs opacity-70">
-          <Link to="/cadastro" className="underline hover:opacity-100">
-            Seja um parceiro
+      </section>
+
+      {/* Atalhos */}
+      <section>
+        <HeaderSecao titulo="Atalhos" />
+        <div className="grid grid-cols-1 gap-2.5">
+          <Link
+            to="/jogar"
+            className="glass rounded-2xl p-4 flex items-center gap-3 card-press"
+          >
+            <span className="size-10 rounded-full bg-cl-verde/15 flex items-center justify-center text-cl-verde-escuro">
+              <Ticket className="size-5" />
+            </span>
+            <span className="flex-1">
+              <span className="block font-display text-lg text-cl-verde-escuro leading-tight">
+                Palpitar e ver meu ranking
+              </span>
+              <span className="block text-xs text-cl-cinza-texto">
+                Dê seu placar e concorra aos prêmios
+              </span>
+            </span>
+            <ChevronRight className="size-5 text-cl-cinza-texto" />
           </Link>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 
-export const Route = createFileRoute("/")({ component: Home });
+function HeaderSecao({ titulo }: { titulo: string }) {
+  return (
+    <div className="flex items-center gap-2 mb-2.5 px-0.5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cl-verde-escuro">
+        {titulo}
+      </p>
+    </div>
+  );
+}
+
+function MiniCard({
+  icon,
+  valor,
+  rotulo,
+}: {
+  icon: React.ReactNode;
+  valor: string;
+  rotulo: string;
+}) {
+  return (
+    <div className="glass rounded-2xl p-3.5 flex items-center gap-3">
+      <span className="size-9 rounded-full bg-cl-verde/10 flex items-center justify-center text-cl-verde">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="font-display text-2xl font-bold leading-none text-cl-verde-escuro tabular-nums">
+          {valor}
+        </p>
+        <p className="text-[11px] text-cl-cinza-texto uppercase tracking-wider mt-0.5">
+          {rotulo}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function SecaoProximoJogo({
+  loading,
+  dados,
+}: {
+  loading: boolean;
+  dados: ProximoJogo | null;
+}) {
+  if (loading) {
+    return (
+      <section>
+        <HeaderSecao titulo="Próximo jogo" />
+        <div className="glass rounded-3xl p-5 animate-pulse h-32" />
+      </section>
+    );
+  }
+  if (!dados) return null;
+
+  const dataFmt = format(
+    new Date(dados.data_hora_inicio),
+    "EEE, dd 'de' MMM • HH'h'mm",
+    { locale: ptBR },
+  ).replace(/^./, (c) => c.toUpperCase());
+
+  return (
+    <section>
+      <HeaderSecao titulo="Próximo jogo" />
+      <article className="glass rounded-3xl p-4">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          <div className="flex flex-col items-center gap-1.5 text-center min-w-0">
+            <Bandeira cc={dados.cc_a} emoji={dados.bandeira_a} alt={dados.time_a} tamanho={40} />
+            <p className="text-sm leading-tight truncate w-full font-medium text-cl-verde-escuro">
+              {dados.time_a}
+            </p>
+          </div>
+          <span className="font-display text-2xl text-cl-verde-escuro/40 font-bold">×</span>
+          <div className="flex flex-col items-center gap-1.5 text-center min-w-0">
+            <Bandeira cc={dados.cc_b} emoji={dados.bandeira_b} alt={dados.time_b} tamanho={40} />
+            <p className="text-sm leading-tight truncate w-full font-medium text-cl-verde-escuro">
+              {dados.time_b}
+            </p>
+          </div>
+        </div>
+        <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs text-cl-cinza-texto">
+            <CalendarDays className="size-3.5 shrink-0" />
+            <span className="truncate">{dataFmt}</span>
+          </div>
+        </div>
+        <Link
+          to="/jogar"
+          className="mt-3 block w-full text-center rounded-full px-4 py-2.5 text-sm font-semibold transition-colors bg-cl-verde text-white hover:bg-cl-verde/90"
+        >
+          Palpitar
+        </Link>
+      </article>
+    </section>
+  );
+}
+
+/* ============================= PARTIDAS ============================= */
+
+type FiltroPartidas = "data" | "grupo" | "rodada";
+
+function AbaPartidas() {
+  const [filtro, setFiltro] = useState<FiltroPartidas>("data");
+
+  const jogos = useQuery({
+    queryKey: ["home", "partidas"],
+    queryFn: buscarPartidas,
+    refetchInterval: 30_000,
+  });
+
+  const filtros: { id: FiltroPartidas; label: string }[] = [
+    { id: "data", label: "Por data" },
+    { id: "grupo", label: "Por grupo" },
+    { id: "rodada", label: "Por rodada" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="-mx-4 px-4 overflow-x-auto no-scrollbar">
+        <div role="tablist" aria-label="Filtros" className="flex gap-2 w-max">
+          {filtros.map((f) => {
+            const isAtivo = filtro === f.id;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                role="tab"
+                aria-selected={isAtivo}
+                onClick={() => setFiltro(f.id)}
+                className={
+                  isAtivo
+                    ? "px-4 py-2 rounded-full bg-cl-verde text-white text-sm font-semibold shadow-sm whitespace-nowrap"
+                    : "px-4 py-2 rounded-full bg-white/60 text-cl-verde text-sm font-semibold border border-cl-verde/15 whitespace-nowrap"
+                }
+              >
+                {f.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {jogos.isLoading ? (
+        <SkeletonList />
+      ) : jogos.isError ? (
+        <EstadoErro mensagem="Falha ao carregar partidas." />
+      ) : (jogos.data ?? []).length === 0 ? (
+        <EstadoVazio mensagem="Nenhum jogo cadastrado." />
+      ) : filtro === "data" ? (
+        <PartidasPorData jogos={jogos.data ?? []} />
+      ) : filtro === "grupo" ? (
+        <PartidasPorGrupo jogos={jogos.data ?? []} />
+      ) : (
+        <PartidasPorRodada jogos={jogos.data ?? []} />
+      )}
+    </div>
+  );
+}
+
+function chaveDia(iso: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso));
+}
+
+function chaveHoje(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function rotuloDia(iso: string, hojeKey: string): string {
+  if (chaveDia(iso) === hojeKey) return "Hoje";
+  return format(new Date(iso), "EEEE, dd 'de' MMM", { locale: ptBR }).replace(
+    /^./,
+    (c) => c.toUpperCase(),
+  );
+}
+
+function PartidasPorData({ jogos }: { jogos: Jogo[] }) {
+  const hojeKey = chaveHoje();
+  const grupos = useMemo(() => {
+    const m = new Map<string, Jogo[]>();
+    for (const j of jogos) {
+      const k = chaveDia(j.data_hora_inicio);
+      if (!m.has(k)) m.set(k, []);
+      m.get(k)!.push(j);
+    }
+    return Array.from(m.entries());
+  }, [jogos]);
+
+  return (
+    <div className="space-y-6">
+      {grupos.map(([k, lista]) => {
+        const ehHoje = k === hojeKey;
+        return (
+          <div key={k}>
+            <div className="flex items-center gap-2 mb-2 mt-1">
+              <p
+                className={`text-[11px] font-semibold uppercase tracking-wider ${
+                  ehHoje ? "text-cl-laranja" : "text-cl-verde-escuro"
+                }`}
+              >
+                {rotuloDia(lista[0].data_hora_inicio, hojeKey)}
+              </p>
+              {ehHoje && (
+                <span className="text-[9px] font-semibold uppercase tracking-wider bg-cl-laranja text-white rounded-full px-2 py-0.5">
+                  hoje
+                </span>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              {lista.map((j) => (
+                <CardJogoAberto key={j.id} jogo={j} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PartidasPorGrupo({ jogos }: { jogos: Jogo[] }) {
+  const grupos = useMemo(() => {
+    const m = new Map<string, Jogo[]>();
+    for (const j of jogos) {
+      if (j.fase !== "GROUP_STAGE" || !j.grupo) continue;
+      if (!m.has(j.grupo)) m.set(j.grupo, []);
+      m.get(j.grupo)!.push(j);
+    }
+    for (const lista of m.values()) {
+      lista.sort(
+        (a, b) =>
+          new Date(a.data_hora_inicio).getTime() -
+          new Date(b.data_hora_inicio).getTime(),
+      );
+    }
+    return Array.from(m.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [jogos]);
+
+  return (
+    <div className="space-y-6">
+      {grupos.map(([g, lista]) => (
+        <div key={g}>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-cl-verde-escuro mb-2">
+            {lista[0].grupo_label ?? g.replace("GROUP_", "Grupo ")}
+          </p>
+          <div className="space-y-1.5">
+            {lista.map((j) => (
+              <CardJogoAberto key={j.id} jogo={j} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PartidasPorRodada({ jogos }: { jogos: Jogo[] }) {
+  const rodadas = useMemo(() => {
+    const m = new Map<string, Jogo[]>();
+    for (const j of jogos) {
+      if (j.fase !== "GROUP_STAGE" || j.rodada == null) continue;
+      const k = String(j.rodada);
+      if (!m.has(k)) m.set(k, []);
+      m.get(k)!.push(j);
+    }
+    for (const lista of m.values()) {
+      lista.sort(
+        (a, b) =>
+          new Date(a.data_hora_inicio).getTime() -
+          new Date(b.data_hora_inicio).getTime(),
+      );
+    }
+    return Array.from(m.entries()).sort(([a], [b]) => Number(a) - Number(b));
+  }, [jogos]);
+
+  return (
+    <div className="space-y-6">
+      {rodadas.map(([r, lista]) => (
+        <div key={r}>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-cl-verde-escuro mb-2">
+            Rodada {r}
+          </p>
+          <div className="space-y-1.5">
+            {lista.map((j) => (
+              <CardJogoAberto key={j.id} jogo={j} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* =========================== CLASSIFICAÇÃO =========================== */
+
+function AbaClassificacao() {
+  const classificacao = useQuery({
+    queryKey: ["home", "classificacao"],
+    queryFn: buscarClassificacao,
+    refetchInterval: 60_000,
+  });
+
+  const porGrupo = useMemo(() => {
+    const m = new Map<string, { label: string; linhas: LinhaClassificacao[] }>();
+    for (const c of classificacao.data ?? []) {
+      if (!m.has(c.grupo)) m.set(c.grupo, { label: c.grupo_label, linhas: [] });
+      m.get(c.grupo)!.linhas.push(c);
+    }
+    return Array.from(m.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [classificacao.data]);
+
+  if (classificacao.isLoading) return <SkeletonClassificacao />;
+
+  return (
+    <div className="space-y-5">
+      <HeaderClassificacao titulo="Classificação" />
+      <div className="space-y-4">
+        {porGrupo.map(([g, { label, linhas }]) => (
+          <TabelaClassificacao key={g} grupoLabel={label} linhas={linhas} />
+        ))}
+      </div>
+      <div className="glass rounded-2xl p-4">
+        <div className="flex items-center gap-2 text-cl-cinza-texto">
+          <Info className="size-4 shrink-0" />
+          <p className="text-xs">
+            Os dois primeiros de cada grupo avançam. Os pontos atualizam conforme os
+            resultados saem.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ========================= FASE ELIMINATÓRIA ========================= */
+
+type FaseElim =
+  | "LAST_32"
+  | "LAST_16"
+  | "QUARTER_FINALS"
+  | "SEMI_FINALS"
+  | "FINAL";
+
+const SUBABAS: { id: FaseElim; label: string }[] = [
+  { id: "LAST_32", label: "16-avos" },
+  { id: "LAST_16", label: "Oitavas" },
+  { id: "QUARTER_FINALS", label: "Quartas" },
+  { id: "SEMI_FINALS", label: "Semis" },
+  { id: "FINAL", label: "Final" },
+];
+
+function AbaEliminatoria() {
+  const [fase, setFase] = useState<FaseElim>("LAST_32");
+
+  const jogos = useQuery({
+    queryKey: ["home", "partidas"],
+    queryFn: buscarPartidas,
+  });
+
+  const filtrados = useMemo(() => {
+    const lista = jogos.data ?? [];
+    if (fase === "SEMI_FINALS") {
+      return lista.filter(
+        (j) => j.fase === "SEMI_FINALS" || j.fase === "THIRD_PLACE",
+      );
+    }
+    return lista.filter((j) => j.fase === fase);
+  }, [jogos.data, fase]);
+
+  return (
+    <div className="space-y-4">
+      <div className="-mx-4 px-4 overflow-x-auto no-scrollbar">
+        <div className="flex gap-2 w-max">
+          {SUBABAS.map((s) => {
+            const isAtiva = fase === s.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setFase(s.id)}
+                aria-selected={isAtiva}
+                className={
+                  isAtiva
+                    ? "px-4 py-2 rounded-full bg-cl-verde text-white text-sm font-semibold shadow-sm whitespace-nowrap"
+                    : "px-4 py-2 rounded-full bg-white/60 text-cl-verde text-sm font-semibold border border-cl-verde/15 whitespace-nowrap"
+                }
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {jogos.isLoading ? (
+        <SkeletonList />
+      ) : filtrados.length === 0 ? (
+        <EstadoVazio mensagem="Sem jogos cadastrados nesta fase." />
+      ) : (
+        <div className="space-y-1.5">
+          {filtrados.map((j) => (
+            <CardEliminatoria key={j.id} jogo={j} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CardEliminatoria({ jogo }: { jogo: Jogo }) {
+  const data = new Date(jogo.data_hora_inicio);
+  const dia = format(data, "dd 'de' MMM • HH'h'mm", { locale: ptBR });
+  const definido =
+    jogo.time_a !== "A definir" && jogo.time_b !== "A definir";
+
+  return (
+    <article className="glass rounded-3xl p-4">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-cl-cinza-texto num">
+          {dia}
+        </span>
+      </div>
+      {definido ? (
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Bandeira cc={jogo.cc_a} emoji={jogo.bandeira_a} alt={jogo.time_a} tamanho={20} />
+            <span className="text-sm font-semibold text-cl-verde-escuro truncate">
+              {jogo.time_a}
+            </span>
+          </div>
+          <span className="text-[10px] uppercase tracking-wider text-cl-cinza-texto">x</span>
+          <div className="flex items-center gap-2 min-w-0 flex-1 justify-end">
+            <span className="text-sm font-semibold text-cl-verde-escuro truncate text-right">
+              {jogo.time_b}
+            </span>
+            <Bandeira cc={jogo.cc_b} emoji={jogo.bandeira_b} alt={jogo.time_b} tamanho={20} />
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-cl-cinza-texto italic">Definido após os jogos</p>
+      )}
+    </article>
+  );
+}
+
+/* ========================= Estados auxiliares ========================= */
+
+function SkeletonList() {
+  return (
+    <div className="space-y-3">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="h-20 rounded-3xl glass animate-pulse" />
+      ))}
+    </div>
+  );
+}
+
+function SkeletonClassificacao() {
+  return (
+    <div className="space-y-4">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="h-52 rounded-3xl glass animate-pulse" />
+      ))}
+    </div>
+  );
+}
+
+function EstadoVazio({ mensagem }: { mensagem: string }) {
+  return (
+    <div className="rounded-3xl border-2 border-dashed border-cl-verde/30 p-6 text-center">
+      <p className="text-sm text-cl-cinza-texto">{mensagem}</p>
+    </div>
+  );
+}
+
+function EstadoErro({ mensagem }: { mensagem: string }) {
+  return (
+    <div className="rounded-3xl border border-cl-erro/30 bg-cl-erro/5 p-4 text-center">
+      <p className="text-sm text-cl-erro font-medium">{mensagem}</p>
+    </div>
+  );
+}
+
+function clamp(n: number, lo: number, hi: number) {
+  return Math.max(lo, Math.min(hi, n));
+}

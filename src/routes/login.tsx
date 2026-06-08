@@ -34,7 +34,7 @@ function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6">
+    <main className="app-bg min-h-screen flex items-center justify-center p-6">
       <div className="glass w-full max-w-sm space-y-4 p-6">
         <h1 className="text-xl font-semibold">Acesso administrativo</h1>
         <div className="space-y-2">
