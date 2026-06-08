@@ -370,7 +370,7 @@ function AbaPartidas() {
                 className={
                   isAtivo
                     ? "px-4 py-2 rounded-full bg-cl-verde text-white text-sm font-semibold shadow-sm whitespace-nowrap"
-                    : "px-4 py-2 rounded-full bg-white/60 text-cl-verde text-sm font-semibold border border-cl-verde/15 whitespace-nowrap"
+                    : "px-4 py-2 rounded-full bg-[color-mix(in_srgb,var(--color-brand-text)_8%,transparent)] text-cl-verde text-sm font-semibold border border-cl-verde/15 whitespace-nowrap"
                 }
               >
                 {f.label}
@@ -631,7 +631,7 @@ function AbaEliminatoria() {
                 className={
                   isAtiva
                     ? "px-4 py-2 rounded-full bg-cl-verde text-white text-sm font-semibold shadow-sm whitespace-nowrap"
-                    : "px-4 py-2 rounded-full bg-white/60 text-cl-verde text-sm font-semibold border border-cl-verde/15 whitespace-nowrap"
+                    : "px-4 py-2 rounded-full bg-[color-mix(in_srgb,var(--color-brand-text)_8%,transparent)] text-cl-verde text-sm font-semibold border border-cl-verde/15 whitespace-nowrap"
                 }
               >
                 {s.label}
