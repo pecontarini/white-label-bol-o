@@ -18,13 +18,20 @@ interface Jogo {
   inicio: string;
 }
 
+interface PremioVinculado {
+  id: string;
+  produto_id: string;
+  quantidade: number;
+  produtos: { nome: string; custo: number | null } | null;
+}
+
 interface TenantJogo {
   id: string;
   status: string;
   palpites_encerrados: boolean;
-  premio_quantidade: number | null;
   jogo_id: string;
   jogos: { time_a: string; time_b: string; inicio: string } | null;
+  tenant_jogo_premios: PremioVinculado[];
 }
 
 interface Produto {
@@ -70,6 +77,12 @@ const FASE_LABEL: Record<string, string> = {
   FINAL: "Final",
 };
 
+const STATUS_INFO: Record<string, string> = {
+  habilitado: "Habilitado — jogo preparado, ainda não recebe palpites",
+  ativo: "Ativo — é o jogo do momento, recebendo palpites",
+  encerrado: "Encerrado — não recebe mais palpites",
+};
+
 const brl = (n: number | null | undefined) =>
   (Number(n) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -84,21 +97,23 @@ function PainelPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [entregas, setEntregas] = useState<Entrega[]>([]);
   const [custos, setCustos] = useState<Custos | null>(null);
+  const [totalPalpites, setTotalPalpites] = useState(0);
   const [err, setErr] = useState<string | null>(null);
 
-  // Ativar jogo
   const [jogoSel, setJogoSel] = useState("");
-  const [produtoSel, setProdutoSel] = useState("");
-  const [qtd, setQtd] = useState(1);
   const [savingAtivo, setSavingAtivo] = useState(false);
 
-  // Novo prêmio (nome + cod_pdv + custo)
+  // adicionar prêmio a uma ativação (por ativação)
+  const [premioAdd, setPremioAdd] = useState<Record<string, string>>({});
+  const [qtdAdd, setQtdAdd] = useState<Record<string, number>>({});
+
+  // novo prêmio
   const [pNome, setPNome] = useState("");
   const [pCod, setPCod] = useState("");
   const [pCusto, setPCusto] = useState("");
   const [savingProduto, setSavingProduto] = useState(false);
 
-  // Registrar entrega
+  // registrar entrega
   const [entClienteNome, setEntClienteNome] = useState("");
   const [entClienteTel, setEntClienteTel] = useState("");
   const [entProduto, setEntProduto] = useState("");
@@ -116,12 +131,13 @@ function PainelPage() {
       { data: cls, error: clsErr },
       { data: ent, error: entErr },
       { data: cst, error: cstErr },
+      { count: palpitesCount },
     ] = await Promise.all([
       supabase.from("tenants").select("nome_empresa,slug,branding").eq("id", tenantId).single(),
       supabase.from("jogos").select("id,fase,grupo,time_a,time_b,inicio").order("inicio"),
       supabase
         .from("tenant_jogos")
-        .select("id,status,palpites_encerrados,premio_quantidade,jogo_id, jogos(time_a,time_b,inicio)")
+        .select("id,status,palpites_encerrados,jogo_id, jogos(time_a,time_b,inicio), tenant_jogo_premios(id,produto_id,quantidade, produtos(nome,custo))")
         .order("created_at", { ascending: false }),
       supabase.from("produtos").select("*").order("created_at", { ascending: false }),
       supabase.from("clientes").select("id,nome,telefone,created_at").order("created_at", { ascending: false }),
@@ -130,6 +146,7 @@ function PainelPage() {
         .select("id,realizado_em,produto_id,cliente_id, produtos(nome,custo), clientes(nome)")
         .order("realizado_em", { ascending: false }),
       supabase.rpc("app_painel_custos"),
+      supabase.from("palpites").select("id", { count: "exact", head: true }),
     ]);
     const firstErr = jsErr || atvErr || pdsErr || clsErr || entErr || cstErr;
     if (firstErr) setErr(firstErr.message);
@@ -141,6 +158,7 @@ function PainelPage() {
     setEntregas((ent as unknown as Entrega[]) ?? []);
     const c = Array.isArray(cst) ? cst[0] : cst;
     setCustos((c as Custos) ?? null);
+    setTotalPalpites(palpitesCount ?? 0);
   }, [tenantId]);
 
   useEffect(() => {
@@ -165,25 +183,55 @@ function PainelPage() {
       tenant_id: tenantId,
       jogo_id: jogoSel,
       status: "ativo",
-      premio_produto_id: produtoSel || null,
-      premio_quantidade: qtd || 1,
     });
     if (error) setErr(error.message);
     setJogoSel("");
-    setProdutoSel("");
-    setQtd(1);
     setSavingAtivo(false);
     await loadAll();
   }
 
-  async function setStatus(id: string, status: string) {
-    const { error } = await supabase.from("tenant_jogos").update({ status }).eq("id", id);
+  async function excluirAtivacao(id: string) {
+    if (!confirm("Excluir esta ativação? Os prêmios vinculados a ela também serão removidos.")) return;
+    const { error } = await supabase.from("tenant_jogos").delete().eq("id", id);
+    if (error) setErr(error.message);
+    await loadAll();
+  }
+
+  async function setStatus(tj: TenantJogo, status: string) {
+    // segunda confirmação ao encerrar
+    if (status === "encerrado") {
+      const nome = tj.jogos ? `${tj.jogos.time_a} x ${tj.jogos.time_b}` : "este jogo";
+      if (!confirm(`Encerrar "${nome}"? Após encerrar, os participantes não conseguem mais palpitar neste jogo.`)) return;
+    }
+    const { error } = await supabase.from("tenant_jogos").update({ status }).eq("id", tj.id);
     if (error) setErr(error.message);
     await loadAll();
   }
 
   async function togglePalpites(id: string, flag: boolean) {
     const { error } = await supabase.from("tenant_jogos").update({ palpites_encerrados: !flag }).eq("id", id);
+    if (error) setErr(error.message);
+    await loadAll();
+  }
+
+  async function adicionarPremioAoJogo(tj: TenantJogo) {
+    const produto_id = premioAdd[tj.id];
+    if (!tenantId || !produto_id) return;
+    const quantidade = qtdAdd[tj.id] || 1;
+    const { error } = await supabase.from("tenant_jogo_premios").insert({
+      tenant_id: tenantId,
+      tenant_jogo_id: tj.id,
+      produto_id,
+      quantidade,
+    });
+    if (error) setErr(error.message);
+    setPremioAdd((s) => ({ ...s, [tj.id]: "" }));
+    setQtdAdd((s) => ({ ...s, [tj.id]: 1 }));
+    await loadAll();
+  }
+
+  async function removerPremioDoJogo(vinculoId: string) {
+    const { error } = await supabase.from("tenant_jogo_premios").delete().eq("id", vinculoId);
     if (error) setErr(error.message);
     await loadAll();
   }
@@ -212,10 +260,16 @@ function PainelPage() {
     await loadAll();
   }
 
+  async function excluirProduto(p: Produto) {
+    if (!confirm(`Excluir o prêmio "${p.nome}"? Ele será removido de qualquer jogo vinculado.`)) return;
+    const { error } = await supabase.from("produtos").delete().eq("id", p.id);
+    if (error) setErr(error.message);
+    await loadAll();
+  }
+
   async function registrarEntrega() {
     if (!tenantId || !entClienteNome.trim() || !entProduto) return;
     setSavingEntrega(true);
-    // cria (ou reaproveita) o ganhador como cliente e registra o sorteio/entrega
     const { data: cli, error: cliErr } = await supabase
       .from("clientes")
       .insert({ tenant_id: tenantId, nome: entClienteNome.trim(), telefone: entClienteTel.trim() || null })
@@ -241,6 +295,60 @@ function PainelPage() {
     await loadAll();
   }
 
+  // ---- Exportação dos participantes (leads) ----
+  function exportarCSV() {
+    const linhas = [["Nome", "Telefone", "Entrou em"]];
+    clientes.forEach((c) => {
+      linhas.push([
+        c.nome ?? "",
+        c.telefone ?? "",
+        new Date(c.created_at).toLocaleString("pt-BR"),
+      ]);
+    });
+    const csv = linhas
+      .map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";"))
+      .join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `participantes-${empresa?.slug ?? "bolao"}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportarPDF() {
+    // usa a janela de impressão do navegador -> "Salvar como PDF"
+    const linhas = clientes
+      .map(
+        (c) =>
+          `<tr><td>${c.nome ?? "—"}</td><td>${c.telefone ?? "—"}</td><td>${new Date(
+            c.created_at,
+          ).toLocaleString("pt-BR")}</td></tr>`,
+      )
+      .join("");
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>Participantes — ${empresa?.nome_empresa ?? ""}</title>
+      <style>
+        body{font-family:system-ui,sans-serif;padding:24px;color:#111}
+        h1{font-size:18px;margin:0 0 4px}
+        p{color:#666;margin:0 0 16px;font-size:12px}
+        table{width:100%;border-collapse:collapse;font-size:13px}
+        th,td{text-align:left;padding:8px;border-bottom:1px solid #e5e7eb}
+        th{background:#f9fafb}
+      </style></head><body>
+      <h1>${empresa?.nome_empresa ?? "Bolão"} — Participantes</h1>
+      <p>${clientes.length} participante(s) · gerado em ${new Date().toLocaleString("pt-BR")}</p>
+      <table><thead><tr><th>Nome</th><th>Telefone</th><th>Entrou em</th></tr></thead>
+      <tbody>${linhas}</tbody></table>
+      </body></html>`);
+    win.document.close();
+    win.focus();
+    win.print();
+  }
+
   if (loading) {
     return (
       <main className="painel-bg min-h-screen flex items-center justify-center">
@@ -259,13 +367,13 @@ function PainelPage() {
   }
 
   const logo = (empresa?.branding as { logo_url?: string } | null)?.logo_url;
-  const ativosLabel = (a: TenantJogo) => (a.jogos ? a.jogos.time_a + " x " + a.jogos.time_b : a.jogo_id);
+  const label = (tj: TenantJogo) => (tj.jogos ? tj.jogos.time_a + " x " + tj.jogos.time_b : tj.jogo_id);
+  const premiosAtivos = produtos.filter((p) => p.ativo);
 
   return (
     <main className="painel-bg min-h-screen">
       <div className="painel-brandbar" />
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        {/* Header */}
         <header className="flex items-center justify-between gap-4 py-5">
           <div className="flex items-center gap-3 min-w-0">
             {logo && (
@@ -285,7 +393,7 @@ function PainelPage() {
 
         {err && <div className="painel-alert">{err}</div>}
 
-        {/* CALCULADORA — Custo da ação */}
+        {/* Custo da ação */}
         <section className="painel-card mb-5">
           <div className="painel-card-head">
             <h2>Custo da ação de marketing</h2>
@@ -309,10 +417,6 @@ function PainelPage() {
                 <span className="painel-stat-sub">exposição ainda em aberto</span>
               </div>
             </div>
-            <p className="painel-muted text-xs mt-3">
-              Disponibilizado = soma de (quantidade × custo) dos prêmios vinculados aos jogos ativados.
-              Realizado = soma do custo dos prêmios marcados como entregues.
-            </p>
           </div>
         </section>
 
@@ -321,12 +425,12 @@ function PainelPage() {
           <section className="painel-card">
             <div className="painel-card-head">
               <h2>Jogo do momento</h2>
-              <span className="painel-pill">{ativos.length} ativo(s)</span>
+              <span className="painel-pill">{ativos.length} ativação(ões)</span>
             </div>
             <div className="painel-card-body space-y-5">
               <div className="space-y-3">
                 <h3 className="painel-subhead">Ativar novo jogo</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_72px_auto] gap-2.5 items-end">
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2.5 items-end">
                   <label className="painel-field">
                     <span>Jogo</span>
                     <select value={jogoSel} onChange={(e) => setJogoSel(e.target.value)} className="painel-input">
@@ -338,35 +442,25 @@ function PainelPage() {
                       ))}
                     </select>
                   </label>
-                  <label className="painel-field">
-                    <span>Prêmio</span>
-                    <select value={produtoSel} onChange={(e) => setProdutoSel(e.target.value)} className="painel-input">
-                      <option value="">— sem prêmio —</option>
-                      {produtos.filter((p) => p.ativo).map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.nome}{p.custo ? " — " + brl(p.custo) : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="painel-field">
-                    <span>Qtd</span>
-                    <input type="number" min={1} value={qtd}
-                      onChange={(e) => setQtd(Number(e.target.value) || 1)} className="painel-input" />
-                  </label>
                   <button onClick={ativarJogo} disabled={savingAtivo || !jogoSel} className="painel-btn-primary">
                     {savingAtivo ? "..." : "Ativar"}
                   </button>
                 </div>
+                <p className="painel-muted text-xs">Depois de ativar, adicione um ou mais prêmios a cada jogo abaixo.</p>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <h3 className="painel-subhead">Ativações</h3>
-                <ul className="space-y-2">
-                  {ativos.map((a) => (
-                    <li key={a.id} className="painel-row">
-                      <span className="flex-1 min-w-[160px] font-medium painel-ink">{ativosLabel(a)}</span>
-                      <select value={a.status} onChange={(e) => setStatus(a.id, e.target.value)} className="painel-input painel-input-sm">
+                {ativos.map((a) => (
+                  <div key={a.id} className="painel-ativacao">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="flex-1 min-w-[140px] font-medium painel-ink">{label(a)}</span>
+                      <select
+                        value={a.status}
+                        onChange={(e) => setStatus(a, e.target.value)}
+                        className="painel-input painel-input-sm"
+                        title={STATUS_INFO[a.status]}
+                      >
                         <option value="habilitado">habilitado</option>
                         <option value="ativo">ativo</option>
                         <option value="encerrado">encerrado</option>
@@ -374,36 +468,83 @@ function PainelPage() {
                       <button onClick={() => togglePalpites(a.id, a.palpites_encerrados)} className="painel-btn-soft">
                         {a.palpites_encerrados ? "Reabrir palpites" : "Encerrar palpites"}
                       </button>
-                    </li>
-                  ))}
-                  {ativos.length === 0 && <li className="painel-empty">Nenhum jogo ativado ainda.</li>}
-                </ul>
+                      <button onClick={() => excluirAtivacao(a.id)} className="painel-btn-danger" title="Excluir ativação">
+                        Excluir
+                      </button>
+                    </div>
+
+                    {/* prêmios vinculados a esta ativação */}
+                    <div className="mt-2 space-y-1.5">
+                      {(a.tenant_jogo_premios ?? []).map((pv) => (
+                        <div key={pv.id} className="painel-premio-vinc">
+                          <span className="painel-ink text-sm">
+                            {pv.quantidade}x {pv.produtos?.nome ?? "—"}
+                            {pv.produtos?.custo ? <span className="painel-muted"> · {brl(pv.produtos.custo)}</span> : null}
+                          </span>
+                          <button onClick={() => removerPremioDoJogo(pv.id)} className="painel-link-danger" title="Remover prêmio">
+                            remover
+                          </button>
+                        </div>
+                      ))}
+                      {(a.tenant_jogo_premios ?? []).length === 0 && (
+                        <p className="painel-muted text-xs">Nenhum prêmio neste jogo ainda.</p>
+                      )}
+
+                      {/* adicionar prêmio */}
+                      <div className="flex items-end gap-2 pt-1">
+                        <select
+                          value={premioAdd[a.id] ?? ""}
+                          onChange={(e) => setPremioAdd((s) => ({ ...s, [a.id]: e.target.value }))}
+                          className="painel-input painel-input-sm flex-1"
+                        >
+                          <option value="">+ adicionar prêmio...</option>
+                          {premiosAtivos.map((p) => (
+                            <option key={p.id} value={p.id}>{p.nome}{p.custo ? ` — ${brl(p.custo)}` : ""}</option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          min={1}
+                          value={qtdAdd[a.id] ?? 1}
+                          onChange={(e) => setQtdAdd((s) => ({ ...s, [a.id]: Number(e.target.value) || 1 }))}
+                          className="painel-input painel-input-sm w-16"
+                          title="Quantidade"
+                        />
+                        <button
+                          onClick={() => adicionarPremioAoJogo(a)}
+                          disabled={!premioAdd[a.id]}
+                          className="painel-btn-soft"
+                        >
+                          Adicionar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {ativos.length === 0 && <p className="painel-empty">Nenhum jogo ativado ainda.</p>}
               </div>
             </div>
           </section>
 
-          {/* Prêmios (com custo + cod PDV) */}
+          {/* Prêmios */}
           <section className="painel-card">
             <div className="painel-card-head">
               <h2>Prêmios</h2>
-              <span className="painel-pill">{produtos.filter((p) => p.ativo).length} ativo(s)</span>
+              <span className="painel-pill">{premiosAtivos.length} ativo(s)</span>
             </div>
             <div className="painel-card-body space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-[1fr_110px_110px_auto] gap-2.5 items-end">
                 <label className="painel-field">
                   <span>Nome do prêmio</span>
-                  <input value={pNome} onChange={(e) => setPNome(e.target.value)}
-                    placeholder="Ex.: Camisa oficial" className="painel-input" />
+                  <input value={pNome} onChange={(e) => setPNome(e.target.value)} placeholder="Ex.: Camisa oficial" className="painel-input" />
                 </label>
                 <label className="painel-field">
                   <span>Cód. PDV (opcional)</span>
-                  <input value={pCod} onChange={(e) => setPCod(e.target.value)}
-                    placeholder="SKU" className="painel-input" />
+                  <input value={pCod} onChange={(e) => setPCod(e.target.value)} placeholder="SKU" className="painel-input" />
                 </label>
                 <label className="painel-field">
                   <span>Custo (R$)</span>
-                  <input value={pCusto} onChange={(e) => setPCusto(e.target.value)}
-                    inputMode="decimal" placeholder="0,00" className="painel-input" />
+                  <input value={pCusto} onChange={(e) => setPCusto(e.target.value)} inputMode="decimal" placeholder="0,00" className="painel-input" />
                 </label>
                 <button onClick={criarProduto} disabled={savingProduto || !pNome.trim()} className="painel-btn-primary whitespace-nowrap">
                   {savingProduto ? "..." : "Criar"}
@@ -418,12 +559,9 @@ function PainelPage() {
                         {p.cod_pdv ? "PDV " + p.cod_pdv + " · " : ""}{brl(p.custo)}
                       </span>
                     </span>
-                    <span className={p.ativo ? "painel-badge-on" : "painel-badge-off"}>
-                      {p.ativo ? "ativo" : "inativo"}
-                    </span>
-                    <button onClick={() => toggleProduto(p)} className="painel-btn-soft">
-                      {p.ativo ? "Desativar" : "Ativar"}
-                    </button>
+                    <span className={p.ativo ? "painel-badge-on" : "painel-badge-off"}>{p.ativo ? "ativo" : "inativo"}</span>
+                    <button onClick={() => toggleProduto(p)} className="painel-btn-soft">{p.ativo ? "Desativar" : "Ativar"}</button>
+                    <button onClick={() => excluirProduto(p)} className="painel-btn-danger" title="Excluir prêmio">Excluir</button>
                   </li>
                 ))}
                 {produtos.length === 0 && <li className="painel-empty">Sem prêmios cadastrados.</li>}
@@ -431,7 +569,7 @@ function PainelPage() {
             </div>
           </section>
 
-          {/* Registrar entrega ao ganhador */}
+          {/* Registrar entrega */}
           <section className="painel-card">
             <div className="painel-card-head">
               <h2>Registrar entrega ao ganhador</h2>
@@ -441,13 +579,11 @@ function PainelPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <label className="painel-field">
                   <span>Nome do ganhador</span>
-                  <input value={entClienteNome} onChange={(e) => setEntClienteNome(e.target.value)}
-                    placeholder="Nome" className="painel-input" />
+                  <input value={entClienteNome} onChange={(e) => setEntClienteNome(e.target.value)} placeholder="Nome" className="painel-input" />
                 </label>
                 <label className="painel-field">
                   <span>Telefone (opcional)</span>
-                  <input value={entClienteTel} onChange={(e) => setEntClienteTel(e.target.value)}
-                    placeholder="(00) 00000-0000" className="painel-input" />
+                  <input value={entClienteTel} onChange={(e) => setEntClienteTel(e.target.value)} placeholder="(00) 00000-0000" className="painel-input" />
                 </label>
                 <label className="painel-field">
                   <span>Prêmio escolhido</span>
@@ -462,17 +598,13 @@ function PainelPage() {
                   <span>Jogo (opcional)</span>
                   <select value={entJogo} onChange={(e) => setEntJogo(e.target.value)} className="painel-input">
                     <option value="">—</option>
-                    {ativos.map((a) => (
-                      <option key={a.id} value={a.id}>{ativosLabel(a)}</option>
-                    ))}
+                    {ativos.map((a) => (<option key={a.id} value={a.id}>{label(a)}</option>))}
                   </select>
                 </label>
               </div>
-              <button onClick={registrarEntrega} disabled={savingEntrega || !entClienteNome.trim() || !entProduto}
-                className="painel-btn-primary w-full sm:w-auto">
+              <button onClick={registrarEntrega} disabled={savingEntrega || !entClienteNome.trim() || !entProduto} className="painel-btn-primary w-full sm:w-auto">
                 {savingEntrega ? "Registrando..." : "Registrar entrega"}
               </button>
-
               <ul className="space-y-2">
                 {entregas.map((e) => (
                   <li key={e.id} className="painel-row">
@@ -489,36 +621,32 @@ function PainelPage() {
             </div>
           </section>
 
-          {/* Participantes */}
+          {/* Participantes — resumo + exportação */}
           <section className="painel-card">
             <div className="painel-card-head">
               <h2>Participantes</h2>
-              <span className="painel-pill">{clientes.length} total</span>
-            </div>
-            <div className="painel-card-body">
-              <div className="overflow-auto rounded-xl border painel-tablewrap">
-                <table className="w-full text-sm">
-                  <thead className="painel-thead">
-                    <tr>
-                      <th className="text-left p-3 font-semibold">Nome</th>
-                      <th className="text-left p-3 font-semibold">Telefone</th>
-                      <th className="text-left p-3 font-semibold">Entrou em</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {clientes.map((c) => (
-                      <tr key={c.id} className="painel-trow">
-                        <td className="p-3 painel-ink">{c.nome ?? "—"}</td>
-                        <td className="p-3 painel-muted">{c.telefone ?? "—"}</td>
-                        <td className="p-3 painel-muted">{new Date(c.created_at).toLocaleString("pt-BR")}</td>
-                      </tr>
-                    ))}
-                    {clientes.length === 0 && (
-                      <tr><td colSpan={3} className="p-6 text-center painel-muted">Nenhum participante ainda.</td></tr>
-                    )}
-                  </tbody>
-                </table>
+              <div className="flex items-center gap-2">
+                <button onClick={exportarCSV} className="painel-btn-soft" disabled={clientes.length === 0}>Exportar CSV</button>
+                <button onClick={exportarPDF} className="painel-btn-soft" disabled={clientes.length === 0}>PDF</button>
               </div>
+            </div>
+            <div className="painel-card-body space-y-4">
+              {/* resumo de palpites */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="painel-stat">
+                  <span className="painel-stat-label">Participantes</span>
+                  <span className="painel-stat-value">{clientes.length}</span>
+                  <span className="painel-stat-sub">contatos capturados</span>
+                </div>
+                <div className="painel-stat">
+                  <span className="painel-stat-label">Palpites</span>
+                  <span className="painel-stat-value">{totalPalpites}</span>
+                  <span className="painel-stat-sub">total enviados</span>
+                </div>
+              </div>
+              <p className="painel-muted text-xs">
+                Exporte os participantes em CSV ou PDF para usar em campanhas de marketing/tráfego.
+              </p>
             </div>
           </section>
         </div>

@@ -17,8 +17,7 @@ type Jogo = {
   grupo: string | null;
   status: string;
   palpites_encerrados: boolean;
-  premio_nome: string | null;
-  premio_quantidade: number | null;
+  premios: { nome: string; quantidade: number }[] | null;
 };
 
 type RankingRow = { nome: string; acertos: number; palpites: number };
@@ -266,9 +265,9 @@ function ParticipantFlow({
                   {jogo.fase ? ` · ${jogo.fase}` : ""}
                   {jogo.grupo ? ` · Grupo ${jogo.grupo}` : ""}
                 </div>
-                {jogo.premio_nome ? (
+                {jogo.premios && jogo.premios.length > 0 ? (
                   <div className="text-xs mt-2" style={{ color: "var(--color-brand-primary)" }}>
-                    Em disputa: {jogo.premio_quantidade ?? 1}x {jogo.premio_nome}
+                    Em disputa: {jogo.premios.map((pr) => `${pr.quantidade}x ${pr.nome}`).join(" · ")}
                   </div>
                 ) : null}
               </div>
@@ -436,11 +435,6 @@ function ParticipantFlow({
       {aba === "premios" && (
         <section className="flex flex-col gap-3">
           <h2 className="text-lg font-semibold">Prêmios</h2>
-          {jogo?.premio_nome ? (
-            <div className="glass p-4 text-sm" style={{ color: "var(--color-brand-primary)" }}>
-              Prêmio do jogo atual: {jogo.premio_quantidade ?? 1}x {jogo.premio_nome}
-            </div>
-          ) : null}
           {premios.length === 0 ? (
             <div className="glass p-5 text-sm opacity-80">
               Os prêmios serão divulgados em breve.
