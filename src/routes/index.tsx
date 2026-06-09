@@ -20,6 +20,7 @@ import {
   HeaderClassificacao,
 } from "@/components/jogos/TabelaClassificacao";
 import { Bandeira } from "@/components/jogos/Bandeira";
+import { useTenant } from "@/store/tenant";
 import {
   buscarPartidas,
   buscarProximoJogo,
@@ -113,6 +114,8 @@ function TabBar({ ativa, onChange }: { ativa: Aba; onChange: (a: Aba) => void })
 /* ============================ VISÃO GERAL ============================ */
 
 function AbaVisaoGeral() {
+  const tenant = useTenant((s) => s.tenant);
+  const logoMarca = tenant?.branding?.logo_url;
   const hoje = new Date();
   const antes = hoje < COPA_INICIO;
   const durante = hoje >= COPA_INICIO && hoje <= COPA_FIM;
@@ -145,6 +148,13 @@ function AbaVisaoGeral() {
             backgroundRepeat: "repeat",
           }}
         />
+        {logoMarca ? (
+          <img
+            src={logoMarca}
+            alt=""
+            className="mx-auto mb-3 h-16 w-auto max-w-[160px] object-contain drop-shadow-sm"
+          />
+        ) : null}
         <p className="font-display text-3xl font-bold text-cl-verde-escuro leading-tight">
           Bolão da Copa
         </p>
