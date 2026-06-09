@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PainelRouteImport } from './routes/painel'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as JogarRouteImport } from './routes/jogar'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -23,6 +24,11 @@ const PainelRoute = PainelRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JogarRoute = JogarRouteImport.update({
+  id: '/jogar',
+  path: '/jogar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CadastroRoute = CadastroRouteImport.update({
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/cadastro': typeof CadastroRoute
+  '/jogar': typeof JogarRoute
   '/login': typeof LoginRoute
   '/painel': typeof PainelRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/cadastro': typeof CadastroRoute
+  '/jogar': typeof JogarRoute
   '/login': typeof LoginRoute
   '/painel': typeof PainelRoute
 }
@@ -60,21 +68,30 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/cadastro': typeof CadastroRoute
+  '/jogar': typeof JogarRoute
   '/login': typeof LoginRoute
   '/painel': typeof PainelRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/cadastro' | '/login' | '/painel'
+  fullPaths: '/' | '/admin' | '/cadastro' | '/jogar' | '/login' | '/painel'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/cadastro' | '/login' | '/painel'
-  id: '__root__' | '/' | '/admin' | '/cadastro' | '/login' | '/painel'
+  to: '/' | '/admin' | '/cadastro' | '/jogar' | '/login' | '/painel'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/cadastro'
+    | '/jogar'
+    | '/login'
+    | '/painel'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   CadastroRoute: typeof CadastroRoute
+  JogarRoute: typeof JogarRoute
   LoginRoute: typeof LoginRoute
   PainelRoute: typeof PainelRoute
 }
@@ -93,6 +110,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jogar': {
+      id: '/jogar'
+      path: '/jogar'
+      fullPath: '/jogar'
+      preLoaderRoute: typeof JogarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cadastro': {
@@ -123,9 +147,20 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   CadastroRoute: CadastroRoute,
+  JogarRoute: JogarRoute,
   LoginRoute: LoginRoute,
   PainelRoute: PainelRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
