@@ -491,15 +491,17 @@ html {
 
 /* Campo de formulário escuro (legível em qualquer fundo). */
 .glass-input {
-  background: color-mix(in srgb, #000 38%, transparent);
-  border: 1px solid color-mix(in srgb, #fff 14%, transparent);
+  /* fundo derivado da cor de TEXTO da marca (camada clara translúcida):
+     funciona tanto em tema claro quanto escuro, sempre legível */
+  background: color-mix(in srgb, var(--color-brand-text, #F4F7F2) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-brand-text, #F4F7F2) 28%, transparent);
   color: var(--color-brand-text, #F4F7F2);
   border-radius: 12px;
   padding: 10px 12px;
   outline: none;
   width: 100%;
 }
-.glass-input::placeholder { color: color-mix(in srgb, var(--color-brand-text, #F4F7F2) 50%, transparent); }
+.glass-input::placeholder { color: color-mix(in srgb, var(--color-brand-text, #F4F7F2) 55%, transparent); }
 .glass-input:focus {
   border-color: var(--color-brand-primary, #E9B21E);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary, #E9B21E) 28%, transparent);
@@ -748,3 +750,39 @@ html {
   border-color: color-mix(in srgb, var(--color-brand-primary, #16a34a) 20%, #eef0f2);
 }
 .painel-stat--saldo .painel-stat-value { color: var(--color-brand-primary, #15803d); }
+
+/* Painel — ativação com prêmios vinculados e botões de exclusão */
+.painel-ativacao {
+  padding: 12px;
+  background: #f9fafb;
+  border: 1px solid #eef0f2;
+  border-radius: 12px;
+}
+.painel-premio-vinc {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #fff;
+  border: 1px solid #eef0f2;
+  border-radius: 8px;
+}
+.painel-btn-danger {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 32px; padding: 0 12px;
+  border-radius: 8px; cursor: pointer;
+  font-size: 12.5px; font-weight: 600;
+  color: #b42318;
+  background: #fef3f2;
+  border: 1px solid #fecdca;
+  transition: background .15s;
+  white-space: nowrap;
+}
+.painel-btn-danger:hover { background: #fee4e2; }
+.painel-link-danger {
+  background: none; border: none; cursor: pointer;
+  color: #b42318; font-size: 12px; font-weight: 600;
+  padding: 2px 6px; border-radius: 6px;
+}
+.painel-link-danger:hover { background: #fef3f2; }
