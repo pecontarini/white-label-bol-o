@@ -20,5 +20,6 @@ export function applyBranding(tenant: Tenant | null) {
   root.style.setProperty("--color-brand-bg", cores.fundo!);
   root.style.setProperty("--color-brand-text", cores.texto!);
   root.style.setProperty("--brand-font", b.fonte ?? NEUTRO.fonte);
+  root.setAttribute("data-tenant", tenant?.slug ?? "");
   document.title = tenant?.nome_exibicao ?? NEUTRO.nome_exibicao;
 }
