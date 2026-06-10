@@ -786,3 +786,54 @@ html {
   padding: 2px 6px; border-radius: 6px;
 }
 .painel-link-danger:hover { background: #fef3f2; }
+
+/* ============================================================
+   Vila Marian — ajuste de contraste do tema vinho.
+   Escopado em html[data-tenant="vilamarian"]: NAO afeta outros clientes.
+   Problema: o primario (vinho #4B0303) e quase igual ao fundo (#3D0202),
+   entao tudo que usava vinho como FRENTE (icone/texto/preenchimento) sumia.
+   Solucao: frente vira o laranja da marca (#F79138, =--cl-laranja),
+   texto sobre laranja vira vinho escuro, e o texto secundario clareia.
+   ============================================================ */
+
+/* Texto secundario mais legivel (creme 62% -> 80%). */
+html[data-tenant="vilamarian"] {
+  --cl-cinza-texto: color-mix(in oklab, var(--color-brand-text) 80%, transparent);
+}
+
+/* Vinho usado como FRENTE (icones, texto de abas inativas) -> laranja. */
+html[data-tenant="vilamarian"] .text-cl-verde {
+  color: var(--cl-laranja) !important;
+}
+
+/* Preenchimentos solidos vinho (barra, CTA, aba ativa, faixa da tabela) -> laranja. */
+html[data-tenant="vilamarian"] .bg-cl-verde {
+  background-color: var(--cl-laranja) !important;
+}
+/* Texto sobre laranja -> vinho escuro (contraste). */
+html[data-tenant="vilamarian"] .bg-cl-verde.text-white,
+html[data-tenant="vilamarian"] .bg-cl-verde .text-white {
+  color: #2A0101 !important;
+}
+/* Hover do CTA acompanha o laranja. */
+html[data-tenant="vilamarian"] .hover\:bg-cl-verde\/90:hover {
+  background-color: color-mix(in srgb, var(--cl-laranja) 88%, black) !important;
+}
+
+/* Fundos vinho translucidos (circulos de icone, trilho da barra) -> laranja suave. */
+html[data-tenant="vilamarian"] .bg-cl-verde\/10 {
+  background-color: color-mix(in srgb, var(--cl-laranja) 14%, transparent) !important;
+}
+html[data-tenant="vilamarian"] .bg-cl-verde\/15 {
+  background-color: color-mix(in srgb, var(--cl-laranja) 18%, transparent) !important;
+}
+
+/* Borda das abas inativas -> laranja suave. */
+html[data-tenant="vilamarian"] .border-cl-verde\/15 {
+  border-color: color-mix(in srgb, var(--cl-laranja) 32%, transparent) !important;
+}
+
+/* Bolinha laranja dentro da faixa da tabela (agora laranja) -> vinho escuro p/ aparecer. */
+html[data-tenant="vilamarian"] .bg-cl-verde .bg-cl-laranja {
+  background-color: #2A0101 !important;
+}
