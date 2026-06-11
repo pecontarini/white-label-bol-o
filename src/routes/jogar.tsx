@@ -22,6 +22,7 @@ type Jogo = {
 
 type RankingRow = { nome: string; acertos: number; palpites: number };
 type Identidade = { nome: string; telefone: string };
+type Geofence = { ativo?: boolean; lat?: number; lng?: number; raio_m?: number } | null;
 type MeuPalpite = {
   time_a: string;
   time_b: string;
@@ -41,16 +42,40 @@ const DEFAULT_REGULAMENTO =
   "quem cravar o placar exato ganha o prêmio definido pelo estabelecimento. " +
   "Um palpite por jogo; pode editar enquanto os palpites estiverem abertos.";
 
+function distanciaMetros(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(bLat - aLat);
+  const dLng = toRad(bLng - aLng);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+function obterPosicao(): Promise<{ lat: number; lng: number }> {
+  return new Promise((resolve, reject) => {
+    if (!("geolocation" in navigator)) return reject(new Error("sem_suporte"));
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => reject(new Error("negado")),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
+    );
+  });
+}
+
 function ParticipantFlow({
   slug,
   nome,
   logoUrl,
   regulamento,
+  geofence,
 }: {
   slug: string;
   nome: string;
   logoUrl?: string;
   regulamento?: string;
+  geofence?: Geofence;
 }) {
   const storageKey = `pnm:participant:${slug}`;
   const [ident, setIdent] = useState<Identidade | null>(null);
@@ -143,12 +168,37 @@ function ParticipantFlow({
       return;
     }
     setEnviando(true);
+    let coords: { lat: number; lng: number } | null = null;
+    if (geofence?.ativo) {
+      try {
+        coords = await obterPosicao();
+      } catch {
+        setEnviando(false);
+        toast.error(
+          "Ative a localização do celular — é preciso estar no estabelecimento para palpitar.",
+        );
+        return;
+      }
+      if (geofence.lat != null && geofence.lng != null) {
+        const d = distanciaMetros(coords.lat, coords.lng, geofence.lat, geofence.lng);
+        const raio = geofence.raio_m ?? 300;
+        if (d > raio) {
+          setEnviando(false);
+          toast.error(
+            `Você está a ${Math.round(d)} m do local. Chegue a até ${raio} m para palpitar.`,
+          );
+          return;
+        }
+      }
+    }
     const { error } = await supabase.rpc("app_registrar_palpite", {
       p_slug: slug,
       p_nome: ident.nome,
       p_telefone: ident.telefone,
       p_palpite_a: Number(palpiteA),
       p_palpite_b: Number(palpiteB),
+      p_lat: coords?.lat ?? null,
+      p_lng: coords?.lng ?? null,
     });
     setEnviando(false);
     if (error) {
@@ -494,6 +544,7 @@ function Jogar() {
           nome={nome}
           logoUrl={tenant.branding?.logo_url}
           regulamento={tenant.branding?.textos?.regulamento}
+          geofence={tenant.geofence}
         />
       </main>
     );
