@@ -106,6 +106,8 @@ function PainelPage() {
   // adicionar prêmio a uma ativação (por ativação)
   const [premioAdd, setPremioAdd] = useState<Record<string, string>>({});
   const [qtdAdd, setQtdAdd] = useState<Record<string, number>>({});
+  const [apurando, setApurando] = useState<string | null>(null);
+  const [ganhMsg, setGanhMsg] = useState<Record<string, string>>({});
 
   // novo prêmio
   const [pNome, setPNome] = useState("");
@@ -211,6 +213,31 @@ function PainelPage() {
   async function togglePalpites(id: string, flag: boolean) {
     const { error } = await supabase.from("tenant_jogos").update({ palpites_encerrados: !flag }).eq("id", id);
     if (error) setErr(error.message);
+    await loadAll();
+  }
+
+  async function apurarGanhadores(tj: TenantJogo) {
+    const nome = tj.jogos ? `${tj.jogos.time_a} x ${tj.jogos.time_b}` : "este jogo";
+    if (!confirm(`Apurar ganhadores de "${nome}"? O sorteio entre quem cravou o placar exato é definitivo.`)) return;
+    setApurando(tj.id);
+    const { data, error } = await supabase.rpc("app_apurar_ganhadores", { p_tenant_jogo_id: tj.id });
+    setApurando(null);
+    if (error) {
+      setGanhMsg((s) => ({ ...s, [tj.id]: error.message }));
+      return;
+    }
+    const r = data as { motivo?: string; ganhadores?: { nome: string; produto: string | null }[] } | null;
+    let msg = "Resposta vazia.";
+    if (r?.motivo === "sem_resultado") {
+      msg = "O resultado do jogo ainda não saiu — apure depois que o placar entrar.";
+    } else if (r?.motivo === "ninguem_acertou") {
+      msg = "Ninguém cravou o placar exato. O prêmio não sai (fica para o próximo jogo).";
+    } else if (r) {
+      const lista = (r.ganhadores ?? []).map((g) => `${g.nome} (${g.produto ?? "prêmio"})`).join(", ");
+      const prefixo = r.motivo === "ja_apurado" ? "Já apurado. Ganhadores: " : "Ganhadores sorteados: ";
+      msg = lista ? prefixo + lista : "Sem ganhadores.";
+    }
+    setGanhMsg((s) => ({ ...s, [tj.id]: msg }));
     await loadAll();
   }
 
@@ -468,6 +495,14 @@ function PainelPage() {
                       <button onClick={() => togglePalpites(a.id, a.palpites_encerrados)} className="painel-btn-soft">
                         {a.palpites_encerrados ? "Reabrir palpites" : "Encerrar palpites"}
                       </button>
+                      <button
+                        onClick={() => apurarGanhadores(a)}
+                        disabled={apurando === a.id}
+                        className="painel-btn-soft"
+                        title="Sorteia entre quem cravou o placar exato e registra a entrega"
+                      >
+                        {apurando === a.id ? "Apurando..." : "Apurar ganhadores"}
+                      </button>
                       <button onClick={() => excluirAtivacao(a.id)} className="painel-btn-danger" title="Excluir ativação">
                         Excluir
                       </button>
@@ -519,6 +554,10 @@ function PainelPage() {
                         </button>
                       </div>
                     </div>
+
+                    {ganhMsg[a.id] && (
+                      <p className="painel-muted text-xs mt-1">{ganhMsg[a.id]}</p>
+                    )}
                   </div>
                 ))}
                 {ativos.length === 0 && <p className="painel-empty">Nenhum jogo ativado ainda.</p>}
