@@ -102,6 +102,8 @@ function PainelPage() {
 
   const [jogoSel, setJogoSel] = useState("");
   const [savingAtivo, setSavingAtivo] = useState(false);
+  const [habilitando, setHabilitando] = useState<"" | "todos" | "brasil">("");
+  const [habMsg, setHabMsg] = useState<string | null>(null);
 
   // adicionar prêmio a uma ativação (por ativação)
   const [premioAdd, setPremioAdd] = useState<Record<string, string>>({});
@@ -189,6 +191,30 @@ function PainelPage() {
     if (error) setErr(error.message);
     setJogoSel("");
     setSavingAtivo(false);
+    await loadAll();
+  }
+
+  async function habilitarLote(apenasBrasil: boolean) {
+    if (!empresa) return;
+    const alvo = apenasBrasil ? "todos os jogos do Brasil" : "todos os jogos";
+    if (!confirm(`Habilitar ${alvo} de uma vez? Eles entram como "habilitado" (não ativos) — você ativa um por vez.`)) return;
+    setHabilitando(apenasBrasil ? "brasil" : "todos");
+    setHabMsg(null);
+    const { data, error } = await supabase.rpc("app_habilitar_jogos", {
+      p_slug: empresa.slug,
+      p_apenas_brasil: apenasBrasil,
+    });
+    setHabilitando("");
+    if (error) {
+      setHabMsg(error.message);
+      return;
+    }
+    const n = (data as { habilitados?: number } | null)?.habilitados ?? 0;
+    setHabMsg(
+      n > 0
+        ? `${n} jogo(s) habilitado(s). Ative um por vez na lista abaixo.`
+        : "Nenhum jogo novo para habilitar (já estavam na lista).",
+    );
     await loadAll();
   }
 
@@ -474,6 +500,15 @@ function PainelPage() {
                   </button>
                 </div>
                 <p className="painel-muted text-xs">Depois de ativar, adicione um ou mais prêmios a cada jogo abaixo.</p>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => habilitarLote(false)} disabled={habilitando !== ""} className="painel-btn-soft">
+                    {habilitando === "todos" ? "Habilitando..." : "Habilitar todos os jogos"}
+                  </button>
+                  <button onClick={() => habilitarLote(true)} disabled={habilitando !== ""} className="painel-btn-soft">
+                    {habilitando === "brasil" ? "Habilitando..." : "Habilitar jogos do Brasil"}
+                  </button>
+                </div>
+                {habMsg && <p className="painel-muted text-xs">{habMsg}</p>}
               </div>
 
               <div className="space-y-3">
