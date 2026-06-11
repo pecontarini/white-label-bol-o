@@ -14,6 +14,7 @@ export interface Tenant {
   nome_exibicao: string;
   branding: Branding;
   ativo: boolean;
+  geofence?: { ativo?: boolean; lat?: number; lng?: number; raio_m?: number } | null;
 }
 
 const PLATFORM_ROOT = "palpitenamesa.com.br"; // domínio raiz real da plataforma
