@@ -159,7 +159,7 @@ function AbaVisaoGeral() {
           Bolão da Copa
         </p>
         <p className="mt-1 text-[11px] text-cl-cinza-texto uppercase tracking-[0.18em]">
-          Copa do Mundo FIFA 2026
+          Palpite na Mesa
         </p>
       </section>
 
