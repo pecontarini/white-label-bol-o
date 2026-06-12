@@ -391,36 +391,17 @@ html {
    ===================================================================== */
 
 /* Fundo escuro de marca para telas internas (cadastro já usa .app-bg). */
+/* Telas internas (palpite, login, cadastro, admin) usam o MESMO fundo liso
+   da vitrine — sem gradiente nem blobs herdados do Caju. Transparente deixa
+   o fundo de marca + textura do body aparecerem igual à home. */
 .app-bg {
   position: relative;
   min-height: 100vh;
-  isolation: isolate;
-  background: radial-gradient(120% 90% at 50% -10%,
-    color-mix(in srgb, var(--color-brand-secondary, #123A28) 90%, #000) 0%,
-    var(--color-brand-bg, #0A2417) 55%,
-    #061a10 100%);
-  color: var(--color-brand-text, #F4F7F2);
+  color: var(--color-brand-text);
   font-family: var(--brand-font, "Inter", system-ui, sans-serif);
 }
 .app-bg::before,
-.app-bg::after {
-  content: "";
-  position: fixed;
-  border-radius: 50%;
-  filter: blur(70px);
-  z-index: -1;
-  pointer-events: none;
-}
-.app-bg::before {
-  width: 380px; height: 380px;
-  background: var(--color-brand-primary, #E9B21E);
-  opacity: 0.10; top: -80px; left: -60px;
-}
-.app-bg::after {
-  width: 420px; height: 420px;
-  background: #2f6e46;
-  opacity: 0.16; bottom: -120px; right: -80px;
-}
+.app-bg::after { content: none; }
 
 /* Botão principal de ação (CTA). */
 .cta {
