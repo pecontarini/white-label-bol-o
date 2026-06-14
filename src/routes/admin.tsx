@@ -22,7 +22,18 @@ interface LeadRow {
   dados: Record<string, any> | null;
 }
 
-type AdminTab = "empresas" | "leads";
+type AdminTab = "empresas" | "leads" | "vencedores";
+type GanhadorRow = {
+  tenant_slug: string;
+  marca: string;
+  cor: string;
+  jogo: string;
+  fase: string | null;
+  realizado_em: string;
+  ganhador: string;
+  telefone: string;
+  premio: string | null;
+};
 const LEAD_STATUSES = ["novo", "em_analise", "contratado", "descartado"] as const;
 
 type FormState = {
@@ -99,6 +110,8 @@ function AdminPage() {
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [leadsError, setLeadsError] = useState<string | null>(null);
   const [expandedLead, setExpandedLead] = useState<string | null>(null);
+  const [ganhadores, setGanhadores] = useState<GanhadorRow[]>([]);
+  const [ganhadoresError, setGanhadoresError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -124,6 +137,15 @@ function AdminPage() {
     }
   }, []);
 
+  const loadGanhadores = useCallback(async () => {
+    const { data, error } = await supabase.rpc("app_admin_ganhadores");
+    if (error) setGanhadoresError(error.message);
+    else {
+      setGanhadoresError(null);
+      setGanhadores((data ?? []) as GanhadorRow[]);
+    }
+  }, []);
+
   useEffect(() => {
     if (loading) return;
     if (!session) {
@@ -141,6 +163,10 @@ function AdminPage() {
   useEffect(() => {
     if (role === "super_admin" && tab === "leads") loadLeads();
   }, [role, tab, loadLeads]);
+
+  useEffect(() => {
+    if (role === "super_admin" && tab === "vencedores") loadGanhadores();
+  }, [role, tab, loadGanhadores]);
 
   async function updateLeadStatus(id: string, status: string) {
     const { error } = await supabase.from("leads").update({ status }).eq("id", id);
@@ -261,16 +287,69 @@ function AdminPage() {
       </header>
 
       <div className="px-6 pt-4 flex gap-2">
-        {(["empresas", "leads"] as AdminTab[]).map((t) => (
+        {(["empresas", "leads", "vencedores"] as AdminTab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={tab === t ? "btn btn-sm btn-primary" : "btn btn-sm btn-ghost"}
           >
-            {t === "empresas" ? "Empresas" : "Leads"}
+            {t === "empresas" ? "Empresas" : t === "leads" ? "Leads" : "Vencedores"}
           </button>
         ))}
       </div>
+
+      {tab === "vencedores" && (
+        <section className="glass m-6 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm uppercase tracking-wide" style={{ color: "var(--color-brand-primary)" }}>
+              Vencedores · todas as marcas
+            </h2>
+            <button onClick={loadGanhadores} className="btn btn-sm btn-ghost">Recarregar</button>
+          </div>
+          {ganhadoresError && (
+            <p className="text-sm mb-2" style={{ color: "var(--color-brand-primary)" }}>{ganhadoresError}</p>
+          )}
+          {ganhadores.length === 0 ? (
+            <p className="text-sm opacity-70">
+              Nenhum vencedor apurado ainda. Eles aparecem aqui automaticamente assim que cada jogo for apurado nos painéis.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-5">
+              {Object.entries(
+                ganhadores.reduce((acc, g) => {
+                  if (!acc[g.marca]) acc[g.marca] = { cor: g.cor, itens: [] };
+                  acc[g.marca].itens.push(g);
+                  return acc;
+                }, {} as Record<string, { cor: string; itens: GanhadorRow[] }>),
+              ).map(([marca, info]) => (
+                <div key={marca}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="inline-block w-3 h-3 rounded-full" style={{ background: info.cor }} />
+                    <h3 className="text-sm font-semibold">{marca}</h3>
+                    <span className="text-xs opacity-60">· {info.itens.length} prêmio(s)</span>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {info.itens.map((g, i) => (
+                      <div
+                        key={i}
+                        className="rounded-xl p-3"
+                        style={{ border: "1px solid var(--glass-border)", borderLeft: `4px solid ${info.cor}` }}
+                      >
+                        <div className="font-semibold text-sm">{g.ganhador}</div>
+                        <div className="text-xs opacity-70">{g.telefone}</div>
+                        <div className="text-sm mt-1">Prêmio: {g.premio ?? "—"}</div>
+                        <div className="text-xs opacity-70 mt-1">
+                          {g.jogo} · {new Date(g.realizado_em).toLocaleString("pt-BR")}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {tab === "leads" ? (
         <section className="glass m-6 p-5">
@@ -339,7 +418,7 @@ function AdminPage() {
             </div>
           )}
         </section>
-      ) : (
+      ) : tab === "empresas" ? (
       <div className="grid lg:grid-cols-[1fr_420px] gap-6 p-6">
         <section className="glass p-5">
           <h2 className="text-sm uppercase tracking-wide opacity-70 mb-3" style={{ color: "var(--color-brand-primary)" }}>
@@ -535,7 +614,7 @@ function AdminPage() {
           </button>
         </aside>
       </div>
-      )}
+      ) : null}
 
       {adminFor && (
         <div
