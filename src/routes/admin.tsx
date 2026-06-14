@@ -22,7 +22,17 @@ interface LeadRow {
   dados: Record<string, any> | null;
 }
 
-type AdminTab = "empresas" | "leads" | "vencedores";
+type AdminTab = "empresas" | "leads" | "vencedores" | "clientes";
+type ClienteRow = {
+  tenant_slug: string;
+  marca: string;
+  cor: string;
+  cliente_id: string;
+  nome: string;
+  telefone: string;
+  palpites: number;
+  ultimo_palpite: string | null;
+};
 type GanhadorRow = {
   tenant_slug: string;
   marca: string;
@@ -125,6 +135,9 @@ function AdminPage() {
   const [expandedLead, setExpandedLead] = useState<string | null>(null);
   const [ganhadores, setGanhadores] = useState<GanhadorRow[]>([]);
   const [ganhadoresError, setGanhadoresError] = useState<string | null>(null);
+  const [clientes, setClientes] = useState<ClienteRow[]>([]);
+  const [clientesError, setClientesError] = useState<string | null>(null);
+  const [clientesBusca, setClientesBusca] = useState("");
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -159,6 +172,15 @@ function AdminPage() {
     }
   }, []);
 
+  const loadClientes = useCallback(async () => {
+    const { data, error } = await supabase.rpc("app_admin_clientes");
+    if (error) setClientesError(error.message);
+    else {
+      setClientesError(null);
+      setClientes((data ?? []) as ClienteRow[]);
+    }
+  }, []);
+
   useEffect(() => {
     if (loading) return;
     if (!session) {
@@ -180,6 +202,10 @@ function AdminPage() {
   useEffect(() => {
     if (role === "super_admin" && tab === "vencedores") loadGanhadores();
   }, [role, tab, loadGanhadores]);
+
+  useEffect(() => {
+    if (role === "super_admin" && tab === "clientes") loadClientes();
+  }, [role, tab, loadClientes]);
 
   async function updateLeadStatus(id: string, status: string) {
     const { error } = await supabase.from("leads").update({ status }).eq("id", id);
@@ -300,13 +326,19 @@ function AdminPage() {
       </header>
 
       <div className="px-6 pt-4 flex gap-2">
-        {(["empresas", "leads", "vencedores"] as AdminTab[]).map((t) => (
+        {(["empresas", "leads", "vencedores", "clientes"] as AdminTab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={tab === t ? "btn btn-sm btn-primary" : "btn btn-sm btn-ghost"}
           >
-            {t === "empresas" ? "Empresas" : t === "leads" ? "Leads" : "Vencedores"}
+            {t === "empresas"
+              ? "Empresas"
+              : t === "leads"
+                ? "Leads"
+                : t === "vencedores"
+                  ? "Vencedores"
+                  : "Clientes"}
           </button>
         ))}
       </div>
@@ -387,6 +419,102 @@ function AdminPage() {
                 </div>
               ))}
             </div>
+          )}
+        </section>
+      )}
+
+      {tab === "clientes" && (
+        <section className="glass m-6 p-5">
+          <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+            <h2 className="text-base font-bold uppercase tracking-wide" style={{ color: "var(--color-brand-primary)" }}>
+              Clientes · {clientes.length} no total
+            </h2>
+            <button onClick={loadClientes} className="btn btn-sm btn-ghost">Recarregar</button>
+          </div>
+          <input
+            value={clientesBusca}
+            onChange={(e) => setClientesBusca(e.target.value)}
+            placeholder="Buscar por nome ou telefone…"
+            className="w-full mb-4 rounded-lg px-3 py-2 text-sm"
+            style={{ border: "1px solid var(--glass-border)", background: "transparent", color: "inherit" }}
+          />
+          {clientesError && (
+            <p className="text-sm mb-2" style={{ color: "var(--color-brand-primary)" }}>{clientesError}</p>
+          )}
+          {clientes.length === 0 ? (
+            <p className="text-sm opacity-70">Nenhum cliente ainda.</p>
+          ) : (
+            (() => {
+              const termo = clientesBusca.trim().toLowerCase();
+              const filtrados = termo
+                ? clientes.filter(
+                    (c) =>
+                      c.nome.toLowerCase().includes(termo) ||
+                      soDigitos(c.telefone).includes(soDigitos(termo)),
+                  )
+                : clientes;
+              if (filtrados.length === 0)
+                return <p className="text-sm opacity-70">Nenhum cliente encontrado para essa busca.</p>;
+              const grupos = filtrados.reduce((acc, c) => {
+                if (!acc[c.marca]) acc[c.marca] = { cor: c.cor, itens: [] };
+                acc[c.marca].itens.push(c);
+                return acc;
+              }, {} as Record<string, { cor: string; itens: ClienteRow[] }>);
+              return (
+                <div className="flex flex-col gap-6">
+                  {Object.entries(grupos).map(([marca, info]) => (
+                    <div key={marca}>
+                      <div className="flex items-center gap-3 mb-2 pl-3" style={{ borderLeft: `5px solid ${info.cor}` }}>
+                        <h3 className="text-base font-bold">{marca}</h3>
+                        <span
+                          className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                          style={{ background: info.cor, color: "#fff" }}
+                        >
+                          {info.itens.length}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        {info.itens.map((c) => (
+                          <div
+                            key={c.cliente_id}
+                            className="flex items-center justify-between gap-3 py-2 flex-wrap"
+                            style={{ borderBottom: "1px solid color-mix(in srgb, var(--color-brand-primary) 15%, transparent)" }}
+                          >
+                            <div className="min-w-0">
+                              <div className="font-semibold text-sm truncate">{c.nome}</div>
+                              <div className="text-base font-bold tracking-tight" style={{ color: "var(--color-brand-primary)" }}>
+                                {formatTelefone(c.telefone)}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs opacity-70 whitespace-nowrap">
+                                {Number(c.palpites)} palpite{Number(c.palpites) === 1 ? "" : "s"}
+                              </span>
+                              <a href={waLink(c.telefone)} target="_blank" rel="noreferrer" className="btn btn-sm btn-primary">
+                                WhatsApp
+                              </a>
+                              <button
+                                onClick={(e) => {
+                                  navigator.clipboard.writeText(formatTelefone(c.telefone));
+                                  const el = e.currentTarget;
+                                  el.textContent = "Copiado!";
+                                  setTimeout(() => {
+                                    el.textContent = "Copiar";
+                                  }, 1500);
+                                }}
+                                className="btn btn-sm btn-ghost"
+                              >
+                                Copiar
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()
           )}
         </section>
       )}
