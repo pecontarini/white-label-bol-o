@@ -67,6 +67,15 @@ interface Custos {
   premios_entregues: number;
 }
 
+interface GanhadorApurado {
+  jogo: string;
+  fase: string | null;
+  realizado_em: string;
+  ganhador: string;
+  telefone: string;
+  premio: string | null;
+}
+
 const FASE_LABEL: Record<string, string> = {
   GROUP_STAGE: "Fase de grupos",
   LAST_32: "16-avos",
@@ -86,6 +95,19 @@ const STATUS_INFO: Record<string, string> = {
 const brl = (n: number | null | undefined) =>
   (Number(n) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+function soDigitos(t: string) {
+  return (t ?? "").replace(/\D/g, "");
+}
+function formatTelefone(t: string) {
+  const d = soDigitos(t);
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return t;
+}
+function waLink(t: string) {
+  return `https://wa.me/55${soDigitos(t)}`;
+}
+
 function PainelPage() {
   const navigate = useNavigate();
   const { session, role, tenantId, loading } = useAuth();
@@ -98,6 +120,7 @@ function PainelPage() {
   const [entregas, setEntregas] = useState<Entrega[]>([]);
   const [custos, setCustos] = useState<Custos | null>(null);
   const [totalPalpites, setTotalPalpites] = useState(0);
+  const [ganhadores, setGanhadores] = useState<GanhadorApurado[]>([]);
   const [err, setErr] = useState<string | null>(null);
 
   const [jogoSel, setJogoSel] = useState("");
@@ -136,6 +159,7 @@ function PainelPage() {
       { data: ent, error: entErr },
       { data: cst, error: cstErr },
       { count: palpitesCount },
+      { data: gnh },
     ] = await Promise.all([
       supabase.from("tenants").select("nome_empresa,slug,branding").eq("id", tenantId).single(),
       supabase.from("jogos").select("id,fase,grupo,time_a,time_b,inicio").order("inicio"),
@@ -151,6 +175,7 @@ function PainelPage() {
         .order("realizado_em", { ascending: false }),
       supabase.rpc("app_painel_custos"),
       supabase.from("palpites").select("id", { count: "exact", head: true }),
+      supabase.rpc("app_lojista_ganhadores"),
     ]);
     const firstErr = jsErr || atvErr || pdsErr || clsErr || entErr || cstErr;
     if (firstErr) setErr(firstErr.message);
@@ -163,6 +188,7 @@ function PainelPage() {
     const c = Array.isArray(cst) ? cst[0] : cst;
     setCustos((c as Custos) ?? null);
     setTotalPalpites(palpitesCount ?? 0);
+    setGanhadores((gnh as GanhadorApurado[]) ?? []);
   }, [tenantId]);
 
   useEffect(() => {
@@ -470,6 +496,64 @@ function PainelPage() {
                 <span className="painel-stat-sub">exposição ainda em aberto</span>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Ganhadores apurados */}
+        <section className="painel-card mb-5">
+          <div className="painel-card-head">
+            <h2>Ganhadores</h2>
+            <span className="painel-pill">{ganhadores.length} no total</span>
+          </div>
+          <div className="painel-card-body">
+            {ganhadores.length === 0 ? (
+              <p className="painel-empty">
+                Nenhum ganhador apurado ainda. Eles aparecem aqui assim que um jogo for apurado.
+              </p>
+            ) : (
+              <div className="grid gap-3 lg:grid-cols-2">
+                {ganhadores.map((g, i) => (
+                  <div
+                    key={i}
+                    className="rounded-xl p-4"
+                    style={{
+                      border: "1px solid color-mix(in srgb, var(--color-brand-primary) 30%, transparent)",
+                      borderLeft: "6px solid var(--color-brand-primary)",
+                    }}
+                  >
+                    <div className="text-xl font-bold leading-tight painel-ink">{g.ganhador}</div>
+                    <div className="text-2xl font-bold tracking-tight mt-1" style={{ color: "var(--color-brand-primary)" }}>
+                      {formatTelefone(g.telefone)}
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <a href={waLink(g.telefone)} target="_blank" rel="noreferrer" className="painel-btn-primary">
+                        Chamar no WhatsApp
+                      </a>
+                      <button
+                        onClick={(e) => {
+                          navigator.clipboard.writeText(formatTelefone(g.telefone));
+                          const el = e.currentTarget;
+                          el.textContent = "Copiado!";
+                          setTimeout(() => {
+                            el.textContent = "Copiar telefone";
+                          }, 1500);
+                        }}
+                        className="painel-btn-ghost"
+                      >
+                        Copiar telefone
+                      </button>
+                    </div>
+                    <div className="text-sm mt-3 painel-ink">
+                      <span className="painel-muted">Prêmio:</span>{" "}
+                      <span className="font-medium">{g.premio ?? "— (a definir)"}</span>
+                    </div>
+                    <div className="painel-muted text-xs mt-1">
+                      {g.jogo} · {new Date(g.realizado_em).toLocaleString("pt-BR")}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
