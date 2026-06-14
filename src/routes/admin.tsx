@@ -34,6 +34,19 @@ type GanhadorRow = {
   telefone: string;
   premio: string | null;
 };
+
+function soDigitos(t: string) {
+  return (t ?? "").replace(/\D/g, "");
+}
+function formatTelefone(t: string) {
+  const d = soDigitos(t);
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return t;
+}
+function waLink(t: string) {
+  return `https://wa.me/55${soDigitos(t)}`;
+}
 const LEAD_STATUSES = ["novo", "em_analise", "contratado", "descartado"] as const;
 
 type FormState = {
@@ -300,9 +313,9 @@ function AdminPage() {
 
       {tab === "vencedores" && (
         <section className="glass m-6 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm uppercase tracking-wide" style={{ color: "var(--color-brand-primary)" }}>
-              Vencedores · todas as marcas
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-bold uppercase tracking-wide" style={{ color: "var(--color-brand-primary)" }}>
+              Vencedores · {ganhadores.length} no total
             </h2>
             <button onClick={loadGanhadores} className="btn btn-sm btn-ghost">Recarregar</button>
           </div>
@@ -314,7 +327,7 @@ function AdminPage() {
               Nenhum vencedor apurado ainda. Eles aparecem aqui automaticamente assim que cada jogo for apurado nos painéis.
             </p>
           ) : (
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-8">
               {Object.entries(
                 ganhadores.reduce((acc, g) => {
                   if (!acc[g.marca]) acc[g.marca] = { cor: g.cor, itens: [] };
@@ -323,22 +336,49 @@ function AdminPage() {
                 }, {} as Record<string, { cor: string; itens: GanhadorRow[] }>),
               ).map(([marca, info]) => (
                 <div key={marca}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="inline-block w-3 h-3 rounded-full" style={{ background: info.cor }} />
-                    <h3 className="text-sm font-semibold">{marca}</h3>
-                    <span className="text-xs opacity-60">· {info.itens.length} prêmio(s)</span>
+                  <div className="flex items-center gap-3 mb-3 pl-3" style={{ borderLeft: `6px solid ${info.cor}` }}>
+                    <h3 className="text-lg font-bold">{marca}</h3>
+                    <span
+                      className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                      style={{ background: info.cor, color: "#fff" }}
+                    >
+                      {info.itens.length} ganhador{info.itens.length > 1 ? "es" : ""}
+                    </span>
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="grid gap-3 lg:grid-cols-2">
                     {info.itens.map((g, i) => (
                       <div
                         key={i}
-                        className="rounded-xl p-3"
-                        style={{ border: "1px solid var(--glass-border)", borderLeft: `4px solid ${info.cor}` }}
+                        className="rounded-xl p-4"
+                        style={{ border: "1px solid var(--glass-border)", borderLeft: `6px solid ${info.cor}` }}
                       >
-                        <div className="font-semibold text-sm">{g.ganhador}</div>
-                        <div className="text-xs opacity-70">{g.telefone}</div>
-                        <div className="text-sm mt-1">Prêmio: {g.premio ?? "—"}</div>
-                        <div className="text-xs opacity-70 mt-1">
+                        <div className="text-xl font-bold leading-tight">{g.ganhador}</div>
+                        <div className="text-2xl font-bold tracking-tight mt-1" style={{ color: "var(--color-brand-primary)" }}>
+                          {formatTelefone(g.telefone)}
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          <a href={waLink(g.telefone)} target="_blank" rel="noreferrer" className="btn btn-sm btn-primary">
+                            Chamar no WhatsApp
+                          </a>
+                          <button
+                            onClick={(e) => {
+                              navigator.clipboard.writeText(formatTelefone(g.telefone));
+                              const el = e.currentTarget;
+                              el.textContent = "Copiado!";
+                              setTimeout(() => {
+                                el.textContent = "Copiar telefone";
+                              }, 1500);
+                            }}
+                            className="btn btn-sm btn-ghost"
+                          >
+                            Copiar telefone
+                          </button>
+                        </div>
+                        <div className="text-sm mt-3">
+                          <span className="opacity-60">Prêmio:</span>{" "}
+                          <span className="font-semibold">{g.premio ?? "— (a definir)"}</span>
+                        </div>
+                        <div className="text-xs opacity-60 mt-1">
                           {g.jogo} · {new Date(g.realizado_em).toLocaleString("pt-BR")}
                         </div>
                       </div>
