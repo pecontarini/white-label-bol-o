@@ -384,6 +384,53 @@ function SecaoProximoJogo({
   );
 }
 
+function SecaoProximoJogoBrasil({ jogo }: { jogo: Jogo }) {
+  const dataFmt = format(
+    new Date(jogo.data_hora_inicio),
+    "EEE, dd 'de' MMM • HH'h'mm",
+    { locale: ptBR },
+  ).replace(/^./, (c) => c.toUpperCase());
+
+  return (
+    <section>
+      <HeaderSecao titulo="Próximo jogo do Brasil" />
+      <article className="glass rounded-3xl p-4 ring-2 ring-cl-verde/50 relative overflow-hidden">
+        <span
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cl-verde via-cl-laranja to-cl-verde"
+        />
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          <div className="flex flex-col items-center gap-1.5 text-center min-w-0">
+            <Bandeira cc={jogo.cc_a} emoji={jogo.bandeira_a} alt={jogo.time_a} tamanho={44} />
+            <p className="text-sm leading-tight truncate w-full font-medium text-cl-verde-escuro">
+              {jogo.time_a}
+            </p>
+          </div>
+          <span className="font-display text-2xl text-cl-verde-escuro/40 font-bold">×</span>
+          <div className="flex flex-col items-center gap-1.5 text-center min-w-0">
+            <Bandeira cc={jogo.cc_b} emoji={jogo.bandeira_b} alt={jogo.time_b} tamanho={44} />
+            <p className="text-sm leading-tight truncate w-full font-medium text-cl-verde-escuro">
+              {jogo.time_b}
+            </p>
+          </div>
+        </div>
+        <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs text-cl-cinza-texto">
+            <CalendarDays className="size-3.5 shrink-0" />
+            <span className="truncate">{dataFmt}</span>
+          </div>
+        </div>
+        <Link
+          to="/jogar"
+          className="mt-3 block w-full text-center rounded-full px-4 py-2.5 text-sm font-semibold transition-colors bg-cl-verde text-white hover:bg-cl-verde/90"
+        >
+          Palpitar no Brasil
+        </Link>
+      </article>
+    </section>
+  );
+}
+
 /* ============================= PARTIDAS ============================= */
 
 type FiltroPartidas = "data" | "grupo" | "rodada";
