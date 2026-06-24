@@ -553,7 +553,7 @@ function PartidasPorData({ jogos }: { jogos: Jogo[] }) {
             </div>
             <div className="space-y-1.5">
               {lista.map((j) => (
-                <CardJogoAberto key={j.id} jogo={j} />
+                <JogoNaLista key={j.id} jogo={j} />
               ))}
             </div>
           </div>
@@ -590,7 +590,7 @@ function PartidasPorGrupo({ jogos }: { jogos: Jogo[] }) {
           </p>
           <div className="space-y-1.5">
             {lista.map((j) => (
-              <CardJogoAberto key={j.id} jogo={j} />
+              <JogoNaLista key={j.id} jogo={j} />
             ))}
           </div>
         </div>
@@ -627,7 +627,7 @@ function PartidasPorRodada({ jogos }: { jogos: Jogo[] }) {
           </p>
           <div className="space-y-1.5">
             {lista.map((j) => (
-              <CardJogoAberto key={j.id} jogo={j} />
+              <JogoNaLista key={j.id} jogo={j} />
             ))}
           </div>
         </div>
