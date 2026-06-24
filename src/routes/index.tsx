@@ -41,6 +41,24 @@ import {
 const COPA_INICIO = new Date("2026-06-11T00:00:00-03:00");
 const COPA_FIM = new Date("2026-07-19T23:59:59-03:00");
 
+const ehBrasil = (j: Jogo) =>
+  j.cc_a?.toLowerCase() === "br" ||
+  j.cc_b?.toLowerCase() === "br" ||
+  j.time_a === "Brasil" ||
+  j.time_b === "Brasil";
+
+function JogoNaLista({ jogo }: { jogo: Jogo }) {
+  if (!ehBrasil(jogo)) return <CardJogoAberto jogo={jogo} />;
+  return (
+    <div className="relative rounded-3xl ring-2 ring-cl-verde/40">
+      <span className="absolute -top-2 left-3 z-10 rounded-full bg-cl-verde text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 shadow-sm">
+        Brasil
+      </span>
+      <CardJogoAberto jogo={jogo} />
+    </div>
+  );
+}
+
 type Aba = "visao" | "partidas" | "classificacao" | "eliminatoria";
 const ABAS: { id: Aba; label: string }[] = [
   { id: "visao", label: "Visão geral" },
@@ -133,6 +151,24 @@ function AbaVisaoGeral() {
     refetchInterval: 60_000,
   });
 
+  const partidas = useQuery({
+    queryKey: ["home", "partidas"],
+    queryFn: buscarPartidas,
+    refetchInterval: 60_000,
+  });
+
+  const proximoBrasil = useMemo<Jogo | null>(() => {
+    const lista = partidas.data ?? [];
+    const futuros = lista
+      .filter((j) => ehBrasil(j) && j.status !== "encerrado")
+      .sort(
+        (a, b) =>
+          new Date(a.data_hora_inicio).getTime() -
+          new Date(b.data_hora_inicio).getTime(),
+      );
+    return futuros[0] ?? null;
+  }, [partidas.data]);
+
   return (
     <div className="space-y-5">
       {/* Hero */}
@@ -165,6 +201,9 @@ function AbaVisaoGeral() {
 
       {/* Próximo jogo */}
       <SecaoProximoJogo loading={proximo.isLoading} dados={proximo.data ?? null} />
+
+      {/* Próximo jogo do Brasil */}
+      {proximoBrasil && <SecaoProximoJogoBrasil jogo={proximoBrasil} />}
 
       {/* Estado da Copa */}
       <section className="glass rounded-3xl p-5">
@@ -345,6 +384,53 @@ function SecaoProximoJogo({
   );
 }
 
+function SecaoProximoJogoBrasil({ jogo }: { jogo: Jogo }) {
+  const dataFmt = format(
+    new Date(jogo.data_hora_inicio),
+    "EEE, dd 'de' MMM • HH'h'mm",
+    { locale: ptBR },
+  ).replace(/^./, (c) => c.toUpperCase());
+
+  return (
+    <section>
+      <HeaderSecao titulo="Próximo jogo do Brasil" />
+      <article className="glass rounded-3xl p-4 ring-2 ring-cl-verde/50 relative overflow-hidden">
+        <span
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cl-verde via-cl-laranja to-cl-verde"
+        />
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          <div className="flex flex-col items-center gap-1.5 text-center min-w-0">
+            <Bandeira cc={jogo.cc_a} emoji={jogo.bandeira_a} alt={jogo.time_a} tamanho={44} />
+            <p className="text-sm leading-tight truncate w-full font-medium text-cl-verde-escuro">
+              {jogo.time_a}
+            </p>
+          </div>
+          <span className="font-display text-2xl text-cl-verde-escuro/40 font-bold">×</span>
+          <div className="flex flex-col items-center gap-1.5 text-center min-w-0">
+            <Bandeira cc={jogo.cc_b} emoji={jogo.bandeira_b} alt={jogo.time_b} tamanho={44} />
+            <p className="text-sm leading-tight truncate w-full font-medium text-cl-verde-escuro">
+              {jogo.time_b}
+            </p>
+          </div>
+        </div>
+        <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs text-cl-cinza-texto">
+            <CalendarDays className="size-3.5 shrink-0" />
+            <span className="truncate">{dataFmt}</span>
+          </div>
+        </div>
+        <Link
+          to="/jogar"
+          className="mt-3 block w-full text-center rounded-full px-4 py-2.5 text-sm font-semibold transition-colors bg-cl-verde text-white hover:bg-cl-verde/90"
+        >
+          Palpitar no Brasil
+        </Link>
+      </article>
+    </section>
+  );
+}
+
 /* ============================= PARTIDAS ============================= */
 
 type FiltroPartidas = "data" | "grupo" | "rodada";
@@ -467,7 +553,7 @@ function PartidasPorData({ jogos }: { jogos: Jogo[] }) {
             </div>
             <div className="space-y-1.5">
               {lista.map((j) => (
-                <CardJogoAberto key={j.id} jogo={j} />
+                <JogoNaLista key={j.id} jogo={j} />
               ))}
             </div>
           </div>
@@ -504,7 +590,7 @@ function PartidasPorGrupo({ jogos }: { jogos: Jogo[] }) {
           </p>
           <div className="space-y-1.5">
             {lista.map((j) => (
-              <CardJogoAberto key={j.id} jogo={j} />
+              <JogoNaLista key={j.id} jogo={j} />
             ))}
           </div>
         </div>
@@ -541,7 +627,7 @@ function PartidasPorRodada({ jogos }: { jogos: Jogo[] }) {
           </p>
           <div className="space-y-1.5">
             {lista.map((j) => (
-              <CardJogoAberto key={j.id} jogo={j} />
+              <JogoNaLista key={j.id} jogo={j} />
             ))}
           </div>
         </div>
