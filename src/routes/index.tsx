@@ -41,6 +41,24 @@ import {
 const COPA_INICIO = new Date("2026-06-11T00:00:00-03:00");
 const COPA_FIM = new Date("2026-07-19T23:59:59-03:00");
 
+const ehBrasil = (j: Jogo) =>
+  j.cc_a?.toLowerCase() === "br" ||
+  j.cc_b?.toLowerCase() === "br" ||
+  j.time_a === "Brasil" ||
+  j.time_b === "Brasil";
+
+function JogoNaLista({ jogo }: { jogo: Jogo }) {
+  if (!ehBrasil(jogo)) return <CardJogoAberto jogo={jogo} />;
+  return (
+    <div className="relative rounded-3xl ring-2 ring-cl-verde/40">
+      <span className="absolute -top-2 left-3 z-10 rounded-full bg-cl-verde text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 shadow-sm">
+        Brasil
+      </span>
+      <CardJogoAberto jogo={jogo} />
+    </div>
+  );
+}
+
 type Aba = "visao" | "partidas" | "classificacao" | "eliminatoria";
 const ABAS: { id: Aba; label: string }[] = [
   { id: "visao", label: "Visão geral" },
@@ -133,6 +151,24 @@ function AbaVisaoGeral() {
     refetchInterval: 60_000,
   });
 
+  const partidas = useQuery({
+    queryKey: ["home", "partidas"],
+    queryFn: buscarPartidas,
+    refetchInterval: 60_000,
+  });
+
+  const proximoBrasil = useMemo<Jogo | null>(() => {
+    const lista = partidas.data ?? [];
+    const futuros = lista
+      .filter((j) => ehBrasil(j) && j.status !== "encerrado")
+      .sort(
+        (a, b) =>
+          new Date(a.data_hora_inicio).getTime() -
+          new Date(b.data_hora_inicio).getTime(),
+      );
+    return futuros[0] ?? null;
+  }, [partidas.data]);
+
   return (
     <div className="space-y-5">
       {/* Hero */}
@@ -165,6 +201,9 @@ function AbaVisaoGeral() {
 
       {/* Próximo jogo */}
       <SecaoProximoJogo loading={proximo.isLoading} dados={proximo.data ?? null} />
+
+      {/* Próximo jogo do Brasil */}
+      {proximoBrasil && <SecaoProximoJogoBrasil jogo={proximoBrasil} />}
 
       {/* Estado da Copa */}
       <section className="glass rounded-3xl p-5">
